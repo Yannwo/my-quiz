@@ -5,29 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CRAM TOEIC // Grammar_Lab</title>
     <style>
-        :root { --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; --accent: #dcdcaa; --correct: #b5cea8; --wrong: #f44747; --border: #3c3c3c; --comment: #6a9955; --nav-bg: #333333; }
-        body { font-family: 'Consolas', 'Monaco', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: var(--bg-color); color: var(--text-main); user-select: none; -webkit-tap-highlight-color: transparent; }
+        :root { 
+            --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; 
+            --accent: #dcdcaa; --correct: #b5cea8; --wrong: #f44747; 
+            --border: #3c3c3c; --comment: #6a9955; --nav-bg: #333333; 
+        }
+        body { 
+            font-family: 'Consolas', 'Monaco', sans-serif; max-width: 600px; 
+            margin: 0 auto; padding: 20px; background-color: var(--bg-color); 
+            color: var(--text-main); user-select: none; -webkit-tap-highlight-color: transparent;
+            min-height: 90vh; display: flex; flex-direction: column; justify-content: center;
+        }
 
+        /* 導覽列 */
         .menu-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; cursor: pointer; z-index: 100; }
         .menu-btn div { width: 25px; height: 3px; background-color: var(--text-main); margin: 5px 0; border-radius: 2px; }
         .side-nav { position: fixed; top: 0; left: -250px; width: 220px; height: 100%; background-color: var(--nav-bg); transition: 0.3s; z-index: 99; padding-top: 60px; border-right: 1px solid var(--border); box-shadow: 10px 0 20px rgba(0,0,0,0.5); }
         .side-nav.open { left: 0; }
         .nav-item { padding: 15px 25px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid #444; text-decoration: none; display: block; font-size: 0.9em; }
 
-        .card { background: var(--card-bg); padding: 30px 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; }
-        .word-header { min-height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-        .word { font-size: 2.8rem; font-weight: bold; color: var(--accent); }
+        /* 卡片設計 */
+        .card { background: var(--card-bg); padding: 40px 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; }
+        .word-header { min-height: 100px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+        .word { font-size: clamp(1.8rem, 7vw, 2.5rem); font-weight: bold; color: var(--accent); line-height: 1.2; }
         
-        .step-indicator { font-size: 0.8em; color: var(--comment); margin-bottom: 20px; letter-spacing: 2px; }
-        .question-label { margin-bottom: 15px; font-size: 1.1em; color: #9cdcfe; }
+        .step-indicator { font-size: 0.75em; color: var(--comment); margin-bottom: 20px; letter-spacing: 2px; border-bottom: 1px dashed #444; padding-bottom: 10px; }
+        .question-label { margin: 20px 0; font-size: 1.1em; color: #9cdcfe; font-weight: bold; }
 
-        .options { display: grid; grid-template-columns: 1fr; gap: 12px; }
-        button.opt-btn { padding: 16px; border: 1px solid var(--border); border-radius: 4px; background: #2d2d2d; color: var(--text-main); text-align: left; cursor: pointer; outline: none; font-size: 1rem; transition: 0.2s; }
-        .correct-ans { background: #37373d !important; color: var(--correct) !important; border-color: var(--correct) !important; }
+        /* 選項按鈕優化 */
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        button.opt-btn { 
+            width: 100%; padding: 18px 20px; border: 1px solid var(--border); 
+            border-radius: 4px; background: #2d2d2d; color: var(--text-main); 
+            text-align: left; cursor: pointer; outline: none; font-size: 1rem; 
+            transition: all 0.2s; box-sizing: border-box; font-family: inherit;
+        }
+        button.opt-btn:hover { border-color: var(--accent); background: #333; }
+        
+        .correct-ans { background: #37373d !important; color: var(--correct) !important; border-color: var(--correct) !important; font-weight: bold; }
         .wrong-ans { background: #37373d !important; color: var(--wrong) !important; border-color: var(--wrong) !important; }
 
-        #next-btn { margin-top: 25px; width: 100%; background: var(--accent); color: #1e1e1e; display: none; padding: 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
-        .stats-bar { background: #252526; padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-top: 20px; display: flex; justify-content: space-around; font-size: 0.85em; color: var(--comment); }
+        #next-btn { margin-top: 25px; width: 100%; background: var(--accent); color: #1e1e1e; display: none; padding: 18px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
+        .stats-bar { margin-top: 25px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid var(--border); display: flex; justify-content: center; font-size: 0.85em; color: var(--comment); }
     </style>
 </head>
 <body onclick="closeNav()">
@@ -36,31 +55,30 @@
     <nav id="sideNav" class="side-nav" onclick="event.stopPropagation()">
         <a href="index.html" class="nav-item">🏠 HOME</a>
         <a href="en_to_zh.html" class="nav-item">Vocabulary Test</a>
-        <a href="grammar_test.html" class="nav-item" style="color:var(--accent)">🧪 Grammar Lab</a>
-        <a href="word_list.html" class="nav-item">📚 Word Bank</a>
+        <a href="grammar_test.html" class="nav-item" style="color:var(--accent)">Grammar Lab</a>
+        <a href="word_list.html" class="nav-item">Word Bank</a>
     </nav>
 
-    <div style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
-        <h2 style="margin:0; color:var(--comment); letter-spacing: 3px;">GRAMMAR_LAB_V1</h2>
-        <span style="font-size: 0.7em; color: #555;">// Filter: Prepositions & Conjunctions</span>
+    <div style="text-align: center; margin-bottom: 15px;">
+        <h2 style="margin:0; color:var(--comment); letter-spacing: 2px; font-size: 1.2em;">GRAMMAR_LAB</h2>
     </div>
 
     <div class="card">
-        <div class="step-indicator" id="step-ui">STEP_01 / PHASE_PART_OF_SPEECH</div>
-        <div class="word-header"><div class="word" id="target-word">---</div></div>
+        <div class="step-indicator" id="step-ui">STEP_01 / POS_CHECK</div>
+        <div class="word-header"><div class="word" id="target-word">LOADING...</div></div>
         <div class="question-label" id="q-label">請選擇詞性：</div>
         
         <div class="options" id="options-box"></div>
         <button id="next-btn" onclick="renderQuestion()">RUN_NEXT_STATION()</button>
 
         <div class="stats-bar">
-            <div>Grammar Remains: <span id="progress-text" style="color:var(--accent);">--</span></div>
+            <div>Grammar Queue: <span id="progress-text" style="color:var(--accent);">--</span></div>
         </div>
     </div>
 
     <script>
         let masterData = [], activePool = [], currentItem = {};
-        let currentStep = 1; // 1: 詞性, 2: 中文
+        let currentStep = 1;
 
         async function init() {
             try {
@@ -71,17 +89,18 @@
                 masterData = rows.slice(1).map(r => {
                     const c = r.split(',').map(v => v.replace(/^"|"$/g, '').trim());
                     return { en: c[0], zh: c[1], pos: c[2] || "", filter: c[3] || "0" };
-                }).filter(i => i.en && i.filter === "1"); // 只考 D 欄標註為 1 的
+                }).filter(i => i.en && i.filter === "1"); 
 
                 activePool = [...masterData];
                 renderQuestion();
-            } catch (e) { document.getElementById('target-word').innerText = 'ERROR'; }
+            } catch (e) { document.getElementById('target-word').innerText = 'CSV_LOAD_ERROR'; }
         }
 
         function renderQuestion() {
             if(!activePool.length) { 
-                document.getElementById('target-word').innerText = "CLEARED!"; 
+                document.getElementById('target-word').innerText = "SYSTEM_CLEARED"; 
                 document.getElementById('options-box').innerHTML = "";
+                document.getElementById('q-label').innerText = "所有項目已練習完畢";
                 return; 
             }
             
@@ -94,37 +113,42 @@
             showPOSPhase();
         }
 
-        // 第一階段：考詞性
         function showPOSPhase() {
             currentStep = 1;
-            document.getElementById('step-ui').innerText = "STEP_01 / PHASE_PART_OF_SPEECH";
-            document.getElementById('q-label').innerText = "此單字的詞性是？";
+            document.getElementById('step-ui').innerText = "STEP_01 / PHASE_POS";
+            document.getElementById('q-label').innerText = "此單字的正確詞性？";
             
-            const posOptions = ["prep.", "conj.", "prep. / conj."]; // 針對 D=1 的常見選項
+            // 重要：這裡的選項文字必須與 CSV 的格式盡可能接近，或透過邏輯模糊比對
+            const posOptions = ["prep.", "conj.", "prep. / conj."]; 
             const box = document.getElementById('options-box');
             box.innerHTML = '';
             
             posOptions.forEach(opt => {
                 const b = document.createElement('button');
                 b.className = 'opt-btn';
-                b.innerText = `[ ] ${opt}`;
+                b.innerText = `> ${opt}`;
+                
                 b.onclick = () => {
-                    if (opt === currentItem.pos) {
+                    // 修正：將 CSV 內容與按鈕文字都標準化（去空格、轉小寫）後再比對
+                    const cleanCSV = currentItem.pos.trim().toLowerCase();
+                    const cleanOpt = opt.trim().toLowerCase();
+
+                    if (cleanOpt === cleanCSV) {
                         b.classList.add('correct-ans');
-                        setTimeout(showMeaningPhase, 600); // 答對自動進入第二關
+                        setTimeout(showMeaningPhase, 500);
                     } else {
                         b.classList.add('wrong-ans');
-                        // 提示正確答案
+                        // 自動提示正確答案 (開發除錯用)
+                        console.log(`Mismatch! CSV:${cleanCSV} | Button:${cleanOpt}`);
                     }
                 };
                 box.appendChild(b);
             });
         }
 
-        // 第二階段：考中文
         function showMeaningPhase() {
             currentStep = 2;
-            document.getElementById('step-ui').innerText = "STEP_02 / PHASE_MEANING_CHECK";
+            document.getElementById('step-ui').innerText = "STEP_02 / PHASE_MEANING";
             document.getElementById('q-label').innerText = "此單字的正確中文意思？";
 
             let opts = [currentItem];
