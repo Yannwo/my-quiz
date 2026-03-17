@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOEIC 1218 挑戰系統</title>
+    <title>TOEIC 語音增強版</title>
     <style>
         :root {
             --bg-color: #0f0f0f;
@@ -27,8 +27,16 @@
             border: 1px solid var(--border); margin-top: 10px;
         }
 
-        .word { font-size: 3.2em; font-weight: 800; color: var(--accent); margin-bottom: 0px; letter-spacing: -1px; }
+        .word-container { 
+            display: flex; align-items: center; justify-content: center; 
+            gap: 15px; margin-bottom: 5px; cursor: pointer;
+        }
+
+        .word { font-size: 3.2em; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
         
+        .speaker-icon { font-size: 1.5em; color: var(--accent); opacity: 0.7; }
+        .speaker-icon:hover { opacity: 1; }
+
         .pos-badge { 
             display: inline-block; padding: 4px 12px; background: #222; color: var(--accent); 
             border-radius: 8px; font-size: 0.9em; font-weight: bold; margin-bottom: 30px; 
@@ -44,7 +52,6 @@
         }
 
         button:hover:not(:disabled) { background: #333; border-color: var(--accent); }
-        button:active { transform: scale(0.98); }
         
         .correct-ans { background: var(--correct) !important; color: #000 !important; font-weight: bold; border-color: var(--correct) !important; }
         .wrong-ans { background: var(--wrong) !important; color: #000 !important; font-weight: bold; border-color: var(--wrong) !important; }
@@ -56,37 +63,38 @@
         }
 
         .info-row { margin-top: 20px; font-size: 0.8em; color: #666; display: flex; justify-content: space-between; }
-        
+        .toggle-link { color: #555; text-decoration: underline; cursor: pointer; }
+
         .history-area { margin-top: 20px; display: none; }
         .log-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .log-box { background: #151515; padding: 10px; border-radius: 10px; height: 250px; overflow-y: auto; font-size: 0.8em; border: 1px solid #222; }
-        
-        .toggle-link { color: #555; text-decoration: underline; cursor: pointer; font-size: 0.8em; }
-        .btn-reset { color: #444; background: none; border: none; cursor: pointer; font-size: 0.8em; text-decoration: underline; margin-top: 20px;}
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="loader">🛰️ 正在同步 1218 個單字...</div>
+    <div id="loader">🛰️ 正在讀取題庫並準備語音...</div>
     <div id="quiz-ui" style="display:none;">
-        <div class="word" id="target-word"></div>
+        <div class="word-container" onclick="speakWord()">
+            <div class="word" id="target-word"></div>
+            <div class="speaker-icon">🔊</div>
+        </div>
+        
         <div id="pos-display" class="pos-badge"></div>
         <div class="options" id="options-box"></div>
         <button id="next-btn">下一題</button>
         <div class="info-row">
-            <span id="progress-text">剩餘：--</span>
-            <span class="toggle-link" onclick="toggleHistory()">顯示/隱藏紀錄</span>
+            <span id="progress-text"></span>
+            <span class="toggle-link" onclick="toggleHistory()">顯示紀錄</span>
         </div>
     </div>
 </div>
 
 <div id="history-area" class="history-area">
     <div class="log-container">
-        <div class="log-box" id="error-log"><strong>❌ 錯誤紀錄</strong><br></div>
-        <div class="log-box" id="correct-log"><strong>✅ 已掌握</strong><br></div>
+        <div class="log-box" id="error-log"><strong>❌ 錯誤紀錄</strong></div>
+        <div class="log-box" id="correct-log"><strong>✅ 已掌握</strong></div>
     </div>
-    <center><button class="btn-reset" onclick="resetAll()">清除進度並重來</button></center>
 </div>
 
 <script>
@@ -95,68 +103,61 @@
     let activePool = []; 
     let currentItem = {};
 
+    // 初始化語音引擎
+    const synth = window.speechSynthesis;
+
     async function init() {
         try {
-            // 從 GitHub 倉庫獲取檔案 (GitHub Pages 環境下)
             const res = await fetch('VocabularyList.csv');
-            if (!res.ok) throw new Error('找不到檔案');
-            
             const buffer = await res.arrayBuffer();
-            // 自動偵測：先嘗試 UTF-8 (GitHub 預設)，若有問題可能需要手動調至 Big5
             const content = new TextDecoder('utf-8').decode(buffer);
-            
             parseCSV(content);
         } catch (e) {
-            document.getElementById('loader').innerText = '❌ 檔案載入失敗，請確認 VocabularyList.csv 已上傳。';
+            document.getElementById('loader').innerText = '❌ 載入失敗';
         }
     }
 
     function parseCSV(text) {
         const rows = text.split(/\r?\n/).filter(r => r.trim() && r.includes(','));
-        // 跳過標題列
         masterData = rows.slice(1).map(r => {
             const cells = r.split(',').map(c => c.replace(/^"|"$/g, '').trim());
             return { en: cells[0], zh: cells[1], pos: cells[2] || "" };
         }).filter(item => item.en && item.zh);
 
-        syncStorage();
-        showUI();
-    }
-
-    function syncStorage() {
         const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         activePool = masterData.filter(m => !mastered.includes(m.en));
-        
-        // 把舊的已掌握單字補進 Log (僅顯示最後 20 個)
-        const log = document.getElementById('correct-log');
-        mastered.slice(-20).forEach(en => {
-            const item = masterData.find(m => m.en === en);
-            if(item) log.innerHTML += `<div>${item.en}</div>`;
-        });
-    }
 
-    function showUI() {
         document.getElementById('loader').style.display = 'none';
         document.getElementById('quiz-ui').style.display = 'block';
         renderQuestion();
     }
 
+    // 發音函數
+    function speakWord() {
+        if (synth.speaking) synth.cancel(); // 如果正在唸，先停掉
+        const utter = new SpeechSynthesisUtterance(currentItem.en);
+        utter.lang = 'en-US'; // 設定為美式英語
+        utter.rate = 0.9;     // 語速稍微慢一點點
+        synth.speak(utter);
+    }
+
     function renderQuestion() {
         if (activePool.length === 0) {
-            document.getElementById('target-word').innerText = "🏆 全數完成！";
-            document.getElementById('options-box').innerHTML = "";
+            document.getElementById('target-word').innerText = "🏆 完賽！";
             return;
         }
 
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('pos-display').style.visibility = 'hidden';
-        document.getElementById('progress-text').innerText = `剩餘：${activePool.length} / 總數：${masterData.length}`;
+        document.getElementById('progress-text').innerText = `剩餘：${activePool.length}`;
 
         currentItem = activePool[Math.floor(Math.random() * activePool.length)];
         document.getElementById('target-word').innerText = currentItem.en;
         document.getElementById('pos-display').innerText = currentItem.pos;
 
-        // 產生選項
+        // 自動朗讀新出現的單字
+        speakWord();
+
         let opts = [currentItem.zh];
         while(opts.length < 4) {
             let r = masterData[Math.floor(Math.random() * masterData.length)].zh;
@@ -181,42 +182,19 @@
 
         if (val === currentItem.zh) {
             btn.classList.add('correct-ans');
-            updateLog('correct-log', currentItem.en);
-            // 移除已掌握
             activePool = activePool.filter(i => i.en !== currentItem.en);
-            save();
+            const mastered = masterData.filter(m => !activePool.find(a => a.en === m.en)).map(m => m.en);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(mastered));
         } else {
             btn.classList.add('wrong-ans');
             btns.forEach(b => { if(b.innerText === currentItem.zh) b.classList.add('correct-ans'); });
-            updateLog('error-log', `${currentItem.en} (${currentItem.zh})`);
         }
         document.getElementById('next-btn').style.display = 'block';
-    }
-
-    function save() {
-        const mastered = masterData.filter(m => !activePool.find(a => a.en === m.en)).map(m => m.en);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(mastered));
-    }
-
-    function updateLog(id, txt) {
-        const el = document.getElementById(id);
-        const div = document.createElement('div');
-        div.style.borderBottom = "1px solid #222";
-        div.style.padding = "4px 0";
-        div.innerText = txt;
-        el.insertBefore(div, el.firstChild.nextSibling);
     }
 
     function toggleHistory() {
         const h = document.getElementById('history-area');
         h.style.display = h.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function resetAll() {
-        if(confirm('確定要清除所有 1218 題的進度嗎？')) {
-            localStorage.removeItem(STORAGE_KEY);
-            location.reload();
-        }
     }
 
     document.getElementById('next-btn').onclick = renderQuestion;
