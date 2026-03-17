@@ -2,40 +2,28 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>TOEIC 單字測驗 - 本地版</title>
+    <title>TOEIC 單字測驗 - 自動載入版</title>
     <style>
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; max-width: 650px; margin: 20px auto; padding: 20px; background-color: #f8f9fa; color: #333; }
         .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
-        .file-selector { border: 2px dashed #4285f4; padding: 30px; border-radius: 15px; background: #f1f6ff; cursor: pointer; margin-bottom: 20px; }
-        .file-selector:hover { background: #e8f0fe; }
         .word { font-size: 3.2em; font-weight: 800; color: #1a73e8; margin-bottom: 0px; }
         .pos-badge { display: inline-block; padding: 5px 15px; background: #e8f0fe; color: #1967d2; border-radius: 20px; font-size: 0.95em; font-weight: bold; margin-bottom: 25px; visibility: hidden; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         button { padding: 18px; font-size: 1.1em; cursor: pointer; border: 2px solid #eee; border-radius: 12px; background: #fff; transition: 0.2s; font-weight: 500; }
-        button:hover:not(:disabled) { border-color: #1a73e8; background: #f1f7ff; transform: translateY(-2px); }
+        button:hover:not(:disabled) { border-color: #1a73e8; background: #f1f7ff; }
         .correct { background: #2ecc71 !important; color: white; border-color: #27ae60 !important; }
         .wrong { background: #e74c3c !important; color: white; border-color: #c0392b !important; }
-        #next-btn { margin-top: 25px; width: 100%; background: #3c4043; color: white; display: none; padding: 18px; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1em; cursor: pointer; }
+        #next-btn { margin-top: 25px; width: 100%; background: #3c4043; color: white; display: none; padding: 18px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .history { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .history-box { background: #fff; padding: 15px; border-radius: 12px; height: 350px; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .log-item { padding: 10px; border-bottom: 1px solid #f1f1f1; font-size: 0.9em; line-height: 1.5; border-left: 5px solid transparent; margin-bottom: 5px; }
-        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; font-size: 1.1em; }
+        .log-item { padding: 10px; border-bottom: 1px solid #f1f1f1; font-size: 0.9em; border-left: 5px solid transparent; margin-bottom: 5px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="setup-area">
-        <div class="file-selector" onclick="document.getElementById('fileInput').click()">
-            <h2 style="margin-top:0">📁 載入單字庫</h2>
-            <p>請點擊選取你的 <strong>VocabularyList.csv</strong></p>
-            <input type="file" id="fileInput" accept=".csv" style="display:none">
-        </div>
-        <p style="font-size: 0.8em; color: #666;">格式要求：A欄英文, B欄中文, C欄詞性</p>
-    </div>
-
-    <div id="quiz-area" style="display:none;">
-        <div class="word" id="target-word">Ready?</div>
+    <div id="quiz-area">
+        <div class="word" id="target-word">載入中...</div>
         <div id="pos-display" class="pos-badge"></div>
         <div class="options" id="options-box"></div>
         <button id="next-btn">下一題</button>
@@ -44,62 +32,40 @@
 
 <div class="history">
     <div class="history-box">
-        <h3 style="color: #d93025;">❌ 錯誤紀錄 (需複習)</h3>
+        <h3 style="color: #d93025; text-align: center;">❌ 錯誤紀錄</h3>
         <div id="error-log"></div>
     </div>
     <div class="history-box">
-        <h3 style="color: #188038;">✅ 答對紀錄</h3>
+        <h3 style="color: #188038; text-align: center;">✅ 答對紀錄</h3>
         <div id="correct-log"></div>
     </div>
 </div>
 
 <script>
+    /* --- 這裡貼上你的 CSV 內容 --- */
+    const csvData = `English,Chinese,POS
+Expert,專家,名詞
+Expect,期待,動詞
+Except,除了...之外,介系詞
+Aspect,方面,名詞
+Adapt,適應,動詞
+Adopt,採用,動詞
+Adept,熟練的,形容詞
+Affect,影響,動詞
+Effect,效果,名詞`;
+    /* -------------------------- */
+
     let vocabulary = [];
     let currentQuiz = {};
 
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // 使用 FileReader 讀取檔案
-        const reader = new FileReader();
-        
-        // 讀取為 ArrayBuffer 以便處理可能的編碼問題
-        reader.onload = function(e) {
-            const buffer = e.target.result;
-            const view = new Uint8Array(buffer);
-            
-            // 簡單偵測是否為 UTF-8
-            let decoder = new TextDecoder('utf-8');
-            let content = decoder.decode(view);
-            
-            // 如果讀出來有亂碼感，嘗試用 Big5 (針對 Excel 存出的 CSV)
-            if (content.includes('')) {
-                decoder = new TextDecoder('big5');
-                content = decoder.decode(view);
-            }
-            
-            processData(content);
-        };
-        reader.readAsArrayBuffer(file);
-    });
-
-    function processData(csvText) {
-        const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-        
-        // 解析並跳過第一列標題
+    function init() {
+        const lines = csvData.split(/\r?\n/).filter(line => line.trim() !== '');
         vocabulary = lines.slice(1).map(line => {
-            const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-            return { en: cols[0], zh: cols[1], pos: cols[2] || "未標註" };
+            const cols = line.split(',').map(c => c.trim());
+            return { en: cols[0], zh: cols[1], pos: cols[2] || "" };
         }).filter(item => item.en && item.zh);
-
-        if (vocabulary.length > 0) {
-            document.getElementById('setup-area').style.display = 'none';
-            document.getElementById('quiz-area').style.display = 'block';
-            nextQuestion();
-        } else {
-            alert("檔案似乎是空的或格式不對，請確認是否有單字在裡面。");
-        }
+        
+        nextQuestion();
     }
 
     function nextQuestion() {
@@ -154,6 +120,7 @@
     }
 
     document.getElementById('next-btn').onclick = nextQuestion;
+    init();
 </script>
 
 </body>
