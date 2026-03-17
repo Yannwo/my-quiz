@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOEIC 語音增強版</title>
+    <title>TOEIC 1218 挑戰系統</title>
     <style>
         :root {
             --bg-color: #0f0f0f;
@@ -29,14 +29,13 @@
 
         .word-container { 
             display: flex; align-items: center; justify-content: center; 
-            gap: 15px; margin-bottom: 5px; cursor: pointer;
+            gap: 15px; margin-bottom: 5px; cursor: pointer; transition: 0.2s;
         }
+        .word-container:active { transform: scale(0.95); }
 
         .word { font-size: 3.2em; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
-        
         .speaker-icon { font-size: 1.5em; color: var(--accent); opacity: 0.7; }
-        .speaker-icon:hover { opacity: 1; }
-
+        
         .pos-badge { 
             display: inline-block; padding: 4px 12px; background: #222; color: var(--accent); 
             border-radius: 8px; font-size: 0.9em; font-weight: bold; margin-bottom: 30px; 
@@ -62,20 +61,25 @@
             font-weight: bold; font-size: 1.1em; cursor: pointer; 
         }
 
-        .info-row { margin-top: 20px; font-size: 0.8em; color: #666; display: flex; justify-content: space-between; }
-        .toggle-link { color: #555; text-decoration: underline; cursor: pointer; }
-
+        .info-row { margin-top: 20px; font-size: 0.85em; color: #666; display: flex; justify-content: space-between; align-items: center; }
+        
         .history-area { margin-top: 20px; display: none; }
         .log-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .log-box { background: #151515; padding: 10px; border-radius: 10px; height: 250px; overflow-y: auto; font-size: 0.8em; border: 1px solid #222; }
+        .log-box { background: #151515; padding: 10px; border-radius: 10px; height: 250px; overflow-y: auto; font-size: 0.8em; border: 1px solid #222; text-align: left; }
+        
+        .control-btns { margin-top: 30px; text-align: center; border-top: 1px solid #222; padding-top: 20px; }
+        .btn-text { background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 0.85em; margin: 0 10px; }
+        .btn-text:hover { color: var(--accent); }
+        .btn-danger { color: #844; }
+        .btn-danger:hover { color: var(--wrong); }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="loader">🛰️ 正在讀取題庫並準備語音...</div>
+    <div id="loader">🛰️ 正在載入 VocabularyList.csv...</div>
     <div id="quiz-ui" style="display:none;">
-        <div class="word-container" onclick="speakWord()">
+        <div class="word-container" onclick="speakWord()" title="點擊發音">
             <div class="word" id="target-word"></div>
             <div class="speaker-icon">🔊</div>
         </div>
@@ -83,9 +87,10 @@
         <div id="pos-display" class="pos-badge"></div>
         <div class="options" id="options-box"></div>
         <button id="next-btn">下一題</button>
+        
         <div class="info-row">
             <span id="progress-text"></span>
-            <span class="toggle-link" onclick="toggleHistory()">顯示紀錄</span>
+            <button class="btn-text" onclick="toggleHistory()">顯示/隱藏紀錄</button>
         </div>
     </div>
 </div>
@@ -97,23 +102,26 @@
     </div>
 </div>
 
+<div class="control-btns">
+    <button class="btn-text btn-danger" onclick="resetProgress()">⚠️ 重置所有測驗進度</button>
+</div>
+
 <script>
-    const STORAGE_KEY = 'toeic_1218_mastered';
+    const STORAGE_KEY = 'toeic_quiz_mastered_list';
     let masterData = []; 
     let activePool = []; 
     let currentItem = {};
-
-    // 初始化語音引擎
     const synth = window.speechSynthesis;
 
     async function init() {
         try {
             const res = await fetch('VocabularyList.csv');
+            if (!res.ok) throw new Error('找不到檔案');
             const buffer = await res.arrayBuffer();
             const content = new TextDecoder('utf-8').decode(buffer);
             parseCSV(content);
         } catch (e) {
-            document.getElementById('loader').innerText = '❌ 載入失敗';
+            document.getElementById('loader').innerText = '❌ 載入失敗，請檢查檔案名稱與路徑。';
         }
     }
 
@@ -124,42 +132,47 @@
             return { en: cells[0], zh: cells[1], pos: cells[2] || "" };
         }).filter(item => item.en && item.zh);
 
-        const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        activePool = masterData.filter(m => !mastered.includes(m.en));
-
+        loadFromStorage();
         document.getElementById('loader').style.display = 'none';
         document.getElementById('quiz-ui').style.display = 'block';
         renderQuestion();
     }
 
-    // 發音函數
+    function loadFromStorage() {
+        const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        activePool = masterData.filter(m => !mastered.includes(m.en));
+    }
+
     function speakWord() {
-        if (synth.speaking) synth.cancel(); // 如果正在唸，先停掉
+        if (!currentItem.en) return;
+        synth.cancel();
         const utter = new SpeechSynthesisUtterance(currentItem.en);
-        utter.lang = 'en-US'; // 設定為美式英語
-        utter.rate = 0.9;     // 語速稍微慢一點點
+        utter.lang = 'en-US';
+        utter.rate = 0.85;
         synth.speak(utter);
     }
 
     function renderQuestion() {
         if (activePool.length === 0) {
-            document.getElementById('target-word').innerText = "🏆 完賽！";
+            document.getElementById('target-word').innerText = "🏆 全數完成！";
+            document.getElementById('options-box').innerHTML = "";
+            document.getElementById('progress-text').innerText = "進度：100%";
             return;
         }
 
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('pos-display').style.visibility = 'hidden';
-        document.getElementById('progress-text').innerText = `剩餘：${activePool.length}`;
+        document.getElementById('progress-text').innerText = `剩餘：${activePool.length} / ${masterData.length}`;
 
         currentItem = activePool[Math.floor(Math.random() * activePool.length)];
         document.getElementById('target-word').innerText = currentItem.en;
         document.getElementById('pos-display').innerText = currentItem.pos;
 
-        // 自動朗讀新出現的單字
-        speakWord();
+        // 自動發音
+        setTimeout(speakWord, 100);
 
         let opts = [currentItem.zh];
-        while(opts.length < 4) {
+        while(opts.length < 4 && masterData.length >= 4) {
             let r = masterData[Math.floor(Math.random() * masterData.length)].zh;
             if(!opts.includes(r)) opts.push(r);
         }
@@ -183,13 +196,35 @@
         if (val === currentItem.zh) {
             btn.classList.add('correct-ans');
             activePool = activePool.filter(i => i.en !== currentItem.en);
-            const mastered = masterData.filter(m => !activePool.find(a => a.en === m.en)).map(m => m.en);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(mastered));
+            saveProgress();
+            updateLog('correct-log', currentItem.en);
         } else {
             btn.classList.add('wrong-ans');
             btns.forEach(b => { if(b.innerText === currentItem.zh) b.classList.add('correct-ans'); });
+            updateLog('error-log', `${currentItem.en}: ${currentItem.zh}`);
         }
         document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function saveProgress() {
+        const mastered = masterData.filter(m => !activePool.find(a => a.en === m.en)).map(m => m.en);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mastered));
+    }
+
+    function resetProgress() {
+        if (confirm('⚠️ 確定要重置嗎？\n這將會清除所有已掌握的單字進度，讓你重新從 1218 題開始。')) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    function updateLog(id, txt) {
+        const el = document.getElementById(id);
+        const div = document.createElement('div');
+        div.style.borderBottom = "1px solid #222";
+        div.style.padding = "5px 0";
+        div.innerText = txt;
+        el.insertBefore(div, el.firstChild.nextSibling);
     }
 
     function toggleHistory() {
