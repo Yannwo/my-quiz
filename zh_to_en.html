@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CRAM TOEIC // ZH-EN</title>
     <style>
+        /* CSS 與 en_to_zh 大致相同 */
         :root { --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; --accent: #dcdcaa; --correct: #b5cea8; --wrong: #f44747; --border: #3c3c3c; --comment: #6a9955; --nav-bg: #333333; }
         body { font-family: 'Consolas', 'Monaco', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: var(--bg-color); color: var(--text-main); user-select: none; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
 
@@ -107,9 +108,10 @@
             const m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             activePool = masterData.filter(d => !m.includes(d.en));
             const log = document.getElementById('correct-log'); log.innerHTML = '';
+            // 初始化顯示已完成清單 (中-英)
             m.slice().reverse().forEach(en => {
                 const item = masterData.find(i => i.en === en);
-                if(item) log.innerHTML += `<div style="border-bottom:1px solid #333">${item.zh} > ${item.en}</div>`;
+                if(item) log.innerHTML += `<div style="border-bottom:1px solid #333; padding:2px 0;">${item.zh} - ${item.en}</div>`;
             });
         }
 
@@ -142,15 +144,20 @@
                     if(o.en === currentItem.en) {
                         totalCorrect++; b.classList.add('correct-ans'); speakText(currentItem.en);
                         let m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                        m.push(currentItem.en); localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
+                        if(!m.includes(currentItem.en)) {
+                            m.push(currentItem.en);
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
+                        }
                         activePool = activePool.filter(i => i.en !== currentItem.en);
+                        // 正確日誌：中 - 英
                         const log = document.getElementById('correct-log');
-                        log.innerHTML = `<div style="border-bottom:1px solid #333">${currentItem.zh} > ${currentItem.en}</div>` + log.innerHTML;
+                        log.innerHTML = `<div style="border-bottom:1px solid #333; padding:2px 0;">${currentItem.zh} - ${currentItem.en}</div>` + log.innerHTML;
                     } else { 
                         b.classList.add('wrong-ans'); 
                         document.querySelectorAll('.opt-btn').forEach(x => { if(x.innerText === `> ${currentItem.en}`) x.classList.add('correct-ans'); });
+                        // 失敗日誌：中 - 英
                         const errLog = document.getElementById('error-log');
-                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong)">FAIL: ${currentItem.zh}</div>` + errLog.innerHTML;
+                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">FAIL: ${currentItem.zh} - ${currentItem.en}</div>` + errLog.innerHTML;
                     }
                     document.getElementById('accuracy-text').innerText = Math.round(totalCorrect/totalAttempts*100)+'%';
                     document.getElementById('next-btn').style.display = 'block';
