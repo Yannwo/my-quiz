@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CRAM TOEIC // EN-ZH</title>
+    <style>
+        :root { --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; --accent: #dcdcaa; --correct: #b5cea8; --wrong: #f44747; --border: #3c3c3c; --comment: #6a9955; --nav-bg: #333333; }
+        body { font-family: 'Consolas', 'Monaco', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: var(--bg-color); color: var(--text-main); user-select: none; overflow-x: hidden; }
+        .mode-switcher { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; padding-top: 10px; }
+        .mode-tab { padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border); background: #2d2d2d; color: #888; text-decoration: none; font-size: 0.85em; transition: 0.2s; font-weight: bold; }
+        .mode-tab.active { border-color: var(--accent); color: var(--accent); }
+        .menu-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; cursor: pointer; z-index: 100; }
+        .menu-btn div { width: 25px; height: 3px; background-color: var(--text-main); margin: 5px 0; }
+        .side-nav { position: fixed; top: 0; left: -250px; width: 220px; height: 100%; background-color: var(--nav-bg); transition: 0.3s; z-index: 99; padding-top: 60px; border-right: 1px solid var(--border); }
+        .side-nav.open { left: 0; }
+        .nav-item { padding: 15px 25px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid #444; text-decoration: none; display: block; font-size: 0.9em; }
+        .card { background: var(--card-bg); padding: 20px 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border); }
+        .word-header { display: flex; align-items: center; justify-content: center; min-height: 100px; }
+        .word { font-size: clamp(1.5rem, 8vw, 2.8rem); font-weight: bold; color: var(--accent) !important; white-space: nowrap; }
+        .speaker-btn { font-size: 1.5em; cursor: pointer; color: var(--accent); background: none; border: none; }
+        .pos-badge { display: inline-block; padding: 2px 10px; background: #333; color: var(--comment); border-radius: 4px; font-size: 0.85em; margin-bottom: 20px; visibility: hidden; border: 1px solid var(--comment); }
+        .options { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        button.opt-btn { padding: 16px; border: 1px solid var(--border); border-radius: 4px; background: #2d2d2d; color: var(--text-main) !important; text-align: left; cursor: pointer; }
+        .correct-ans { background: #37373d !important; color: var(--correct) !important; border-color: var(--correct) !important; }
+        .wrong-ans { background: #37373d !important; color: var(--wrong) !important; border-color: var(--wrong) !important; }
+        #next-btn { margin-top: 25px; width: 100%; background: var(--accent); color: #1e1e1e !important; display: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .stats-bar { background: #252526; padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-top: 20px; display: flex; justify-content: space-around; font-size: 0.85em; }
+        .history-box { background: #1e1e1e; padding: 12px; height: 150px; overflow-y: auto; font-size: 0.82em; border: 1px solid var(--border); text-align: left; color: #9cdcfe; margin-top: 10px; }
+        .reset-btn { margin-top: 30px; color: var(--wrong); background: none; border: 1px solid #444; padding: 8px; width: 100%; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body onclick="closeNav()">
+    <button class="menu-btn" onclick="event.stopPropagation(); toggleNav()"><div></div><div></div><div></div></button>
+    <nav id="sideNav" class="side-nav" onclick="event.stopPropagation()">
+        <a href="index.html" class="nav-item">🏠 HOME</a>
+        <a href="en_to_zh.html" class="nav-item">Vocabulary Test</a>
+    </nav>
+
+    <div class="mode-switcher">
+        <a href="en_to_zh.html" class="mode-tab active">EN > ZH</a>
+        <a href="zh_to_en.html" class="mode-tab">ZH > EN</a>
+    </div>
+
+    <div class="card">
+        <div class="word-header"><div class="word" id="target-word">...</div><button class="speaker-btn" onclick="speakText(currentItem.en)">🔊</button></div>
+        <div id="pos-display" class="pos-badge"></div>
+        <div class="options" id="options-box"></div>
+        <button id="next-btn" onclick="renderQuestion()">RUN_NEXT()</button>
+        <div class="stats-bar">
+            <div>Remains: <span id="progress-text" style="color:var(--accent);">--</span></div>
+            <div>Accuracy: <span id="accuracy-text" style="color:var(--accent);">0%</span></div>
+        </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+        <div id="error-log" class="history-box"></div>
+        <div id="correct-log" class="history-box" style="color:#ce9178;"></div>
+    </div>
+    <button class="reset-btn" onclick="resetProgress()">[!] Hard_Reset_Progress</button>
+
+    <script>
+        const STORAGE_KEY = 'toeic_en_zh_mastered';
+        let masterData = [], activePool = [], currentItem = {}, totalAttempts = 0, totalCorrect = 0;
+        const synth = window.speechSynthesis;
+        async function init() {
+            const res = await fetch('VocabularyList.csv');
+            const content = new TextDecoder('utf-8').decode(await res.arrayBuffer());
+            const rows = content.split(/\r?\n/).filter(r => r.includes(','));
+            masterData = rows.slice(1).map(r => {
+                const c = r.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+                return { en: c[0], zh: c[1], pos: c[2] || "" };
+            }).filter(i => i.en && i.zh);
+            refreshPool(); renderQuestion();
+        }
+        function toggleNav() { document.getElementById('sideNav').classList.toggle('open'); }
+        function closeNav() { document.getElementById('sideNav').classList.remove('open'); }
+        function speakText(t) { synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='en-US'; synth.speak(u); }
+        function refreshPool() {
+            const m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            activePool = masterData.filter(d => !m.includes(d.en));
+            const log = document.getElementById('correct-log'); log.innerHTML = '';
+            m.slice().reverse().forEach(en => { log.innerHTML += `<div style="border-bottom:1px solid #333">${en}</div>`; });
+        }
+        function renderQuestion() {
+            if(!activePool.length) { document.getElementById('target-word').innerText = "DONE!"; return; }
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('pos-display').style.visibility = 'hidden';
+            currentItem = activePool[Math.floor(Math.random() * activePool.length)];
+            document.getElementById('target-word').innerText = currentItem.en;
+            document.getElementById('pos-display').innerText = `/* ${currentItem.pos} */`;
+            document.getElementById('progress-text').innerText = activePool.length;
+            speakText(currentItem.en);
+            let opts = [currentItem];
+            while(opts.length < 4) { let r = masterData[Math.floor(Math.random()*masterData.length)]; if(!opts.find(o=>o.en===r.en)) opts.push(r); }
+            opts.sort(()=>Math.random()-0.5);
+            const box = document.getElementById('options-box'); box.innerHTML = '';
+            opts.forEach(o => {
+                const b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = `> ${o.zh}`;
+                b.onclick = () => {
+                    document.querySelectorAll('.opt-btn').forEach(x => x.disabled = true);
+                    document.getElementById('pos-display').style.visibility = 'visible';
+                    totalAttempts++;
+                    if(o.en === currentItem.en) {
+                        totalCorrect++; b.classList.add('correct-ans');
+                        let m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                        m.push(currentItem.en); localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
+                        activePool = activePool.filter(i => i.en !== currentItem.en);
+                    } else { b.classList.add('wrong-ans'); document.querySelectorAll('.opt-btn').forEach(x => { if(x.innerText === `> ${currentItem.zh}`) x.classList.add('correct-ans'); }); }
+                    document.getElementById('accuracy-text').innerText = Math.round(totalCorrect/totalAttempts*100)+'%';
+                    document.getElementById('next-btn').style.display = 'block';
+                };
+                box.appendChild(b);
+            });
+        }
+        function resetProgress() { if(confirm('Reset?')) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+        init();
+    </script>
+</body>
+</html>
