@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAM TOEIC // Word Bank</title>
+    <style>
+        :root { --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; --accent: #dcdcaa; --border: #3c3c3c; --comment: #6a9955; --nav-bg: #333333; }
+        body { font-family: 'Consolas', 'Monaco', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: var(--bg-color); color: var(--text-main); }
+        
+        /* 導航與選單 */
+        .menu-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; cursor: pointer; z-index: 100; }
+        .menu-btn div { width: 25px; height: 3px; background-color: var(--text-main); margin: 5px 0; border-radius: 2px; }
+        .side-nav { position: fixed; top: 0; left: -250px; width: 220px; height: 100%; background-color: var(--nav-bg); transition: 0.3s; z-index: 99; padding-top: 60px; border-right: 1px solid var(--border); }
+        .side-nav.open { left: 0; }
+        .nav-item { padding: 15px 25px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid #444; text-decoration: none; display: block; font-size: 0.9em; }
+
+        .header { text-align: center; margin-bottom: 30px; padding-top: 40px; }
+        .header h1 { color: var(--accent); font-size: 1.8rem; }
+
+        /* 搜尋與過濾 */
+        .search-container { margin-bottom: 20px; display: flex; gap: 10px; }
+        #search-input { flex: 1; padding: 12px; border-radius: 4px; border: 1px solid var(--border); background: var(--card-bg); color: white; outline: none; }
+        
+        .az-nav { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; justify-content: center; }
+        .az-btn { padding: 5px 8px; font-size: 0.8em; border: 1px solid var(--border); background: #2d2d2d; color: var(--text-main); cursor: pointer; border-radius: 3px; }
+
+        /* 表格樣式 */
+        .word-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
+        .word-table th, .word-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        .word-table th { background: #333; color: var(--accent); font-size: 0.9em; }
+        .word-row:hover { background: #2a2d2e; }
+        
+        .status-badge { font-size: 0.75em; padding: 2px 6px; border-radius: 3px; }
+        .status-mastered { background: #6a9955; color: white; }
+        .status-pending { background: #555; color: #aaa; }
+        
+        .pos { color: var(--comment); font-style: italic; font-size: 0.85em; }
+    </style>
+</head>
+<body onclick="closeNav()">
+
+    <button class="menu-btn" onclick="event.stopPropagation(); toggleNav()"><div></div><div></div><div></div></button>
+<nav id="sideNav" class="side-nav" onclick="event.stopPropagation()">
+    <a href="index.html" class="nav-item">🏠 HOME</a>
+    <a href="en_to_zh.html" class="nav-item">Vocabulary Test</a>
+ 
+    <a href="word_list.html" class="nav-item">Word Bank</a>
+</nav>
+
+    <div class="header">
+        <h1>LIBRARY_SYSTEM</h1>
+        <p style="font-size: 0.8em; color: var(--comment);">// Total Vocabulary Overview</p>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search words or definitions..." oninput="filterWords()">
+    </div>
+
+    <div class="az-nav" id="az-nav"></div>
+
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th style="width: 40%;">WORD</th>
+                <th style="width: 15%;">POS</th>
+                <th style="width: 30%;">MEANING</th>
+                <th style="width: 15%;">STATUS</th>
+            </tr>
+        </thead>
+        <tbody id="word-list-body">
+            </tbody>
+    </table>
+
+    <script>
+        let allWords = [];
+        const MASTERED_EN_ZH = 'toeic_en_zh_mastered';
+        
+        async function loadWords() {
+            const res = await fetch('VocabularyList.csv');
+            const content = new TextDecoder('utf-8').decode(await res.arrayBuffer());
+            const rows = content.split(/\r?\n/).filter(r => r.includes(','));
+            
+            allWords = rows.slice(1).map(r => {
+                const c = r.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+                return { en: c[0], zh: c[1], pos: c[2] || "n." };
+            }).filter(i => i.en).sort((a, b) => a.en.localeCompare(b.en));
+
+            renderAZ();
+            renderTable(allWords);
+        }
+
+        function renderAZ() {
+            const nav = document.getElementById('az-nav');
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+            alphabet.forEach(letter => {
+                const btn = document.createElement('button');
+                btn.className = 'az-btn';
+                btn.innerText = letter;
+                btn.onclick = () => {
+                    document.getElementById('search-input').value = "";
+                    const filtered = allWords.filter(w => w.en.toUpperCase().startsWith(letter));
+                    renderTable(filtered);
+                };
+                nav.appendChild(btn);
+            });
+            const allBtn = document.createElement('button');
+            allBtn.className = 'az-btn';
+            allBtn.innerText = "ALL";
+            allBtn.onclick = () => renderTable(allWords);
+            nav.appendChild(allBtn);
+        }
+
+        function renderTable(data) {
+            const mastered = JSON.parse(localStorage.getItem(MASTERED_EN_ZH) || '[]');
+            const body = document.getElementById('word-list-body');
+            body.innerHTML = data.map(w => {
+                const isMastered = mastered.includes(w.en);
+                return `
+                    <tr class="word-row">
+                        <td style="font-weight:bold;">${w.en}</td>
+                        <td class="pos">${w.pos}</td>
+                        <td>${w.zh}</td>
+                        <td>
+                            <span class="status-badge ${isMastered ? 'status-mastered' : 'status-pending'}">
+                                ${isMastered ? 'MASTERED' : 'LEARNING'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterWords() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allWords.filter(w => 
+                w.en.toLowerCase().includes(q) || w.zh.includes(q)
+            );
+            renderTable(filtered);
+        }
+
+        function toggleNav() { document.getElementById('sideNav').classList.toggle('open'); }
+        function closeNav() { document.getElementById('sideNav').classList.remove('open'); }
+
+        loadWords();
+    </script>
+</body>
+</html>

@@ -43,10 +43,12 @@
 <body onclick="closeNav()">
 
     <button class="menu-btn" onclick="event.stopPropagation(); toggleNav()"><div></div><div></div><div></div></button>
-    <nav id="sideNav" class="side-nav" onclick="event.stopPropagation()">
-        <a href="index.html" class="nav-item">🏠 HOME</a>
-        <a href="en_to_zh.html" class="nav-item">Vocabulary Test</a>
-    </nav>
+<nav id="sideNav" class="side-nav" onclick="event.stopPropagation()">
+    <a href="index.html" class="nav-item">🏠 HOME</a>
+    <a href="en_to_zh.html" class="nav-item">Vocabulary Test</a>
+ 
+    <a href="word_list.html" class="nav-item">Word Bank</a>
+</nav>
 
     <div class="mode-switcher">
         <a href="en_to_zh.html" class="mode-tab active">EN > ZH</a>
@@ -183,7 +185,7 @@
                         localStorage.setItem(ERRORS_KEY, JSON.stringify(e));
 
                         const errLog = document.getElementById('error-log');
-                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">${errContent}</div>` + errLog.innerHTML;
+                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">FAIL: ${errContent}</div>` + errLog.innerHTML;
                     }
                     updateStatsUI();
                     document.getElementById('next-btn').style.display = 'block';

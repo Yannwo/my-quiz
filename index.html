@@ -5,56 +5,129 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRAM TOEIC // Terminal</title>
     <style>
+        :root {
+            --bg: #1e1e1e;
+            --card: #252526;
+            --accent: #dcdcaa;
+            --text: #d4d4d4;
+            --border: #3c3c3c;
+            --comment: #6a9955;
+        }
+
         body { 
-            background: #1e1e1e; 
-            color: #dcdcaa; 
-            font-family: 'Consolas', monospace; 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
-            height: 100vh; 
+            min-height: 100vh; 
             margin: 0; 
             overflow: hidden;
+            position: relative;
         }
+
+        /* 模擬終端機掃描線效果 */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
         .logo { 
-            font-size: 3em; 
+            font-size: clamp(2rem, 10vw, 3.5rem); 
             font-weight: bold; 
-            margin-bottom: 40px; 
-            letter-spacing: 2px;
+            margin-bottom: 10px; 
+            letter-spacing: 4px;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(220, 220, 170, 0.3);
         }
+
+        .subtitle {
+            color: var(--comment);
+            margin-bottom: 50px;
+            font-size: 0.9em;
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 320px;
+            z-index: 3;
+        }
+
         .nav-card {
-            background: #252526; 
-            border: 1px solid #3c3c3c; 
-            padding: 25px 50px; 
-            border-radius: 8px;
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            padding: 20px; 
+            border-radius: 4px;
             text-decoration: none; 
-            color: #d4d4d4; 
-            transition: 0.2s; 
-            font-size: 1.1em;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            color: var(--text); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            font-size: 1rem;
+            text-align: center;
+            display: block;
+            position: relative;
+            overflow: hidden;
         }
+
+        .nav-card::before {
+            content: "> ";
+            opacity: 0;
+            transition: 0.2s;
+            color: var(--accent);
+        }
+
         .nav-card:hover { 
-            border-color: #dcdcaa; 
+            border-color: var(--accent); 
             background: #2d2d2d; 
-            color: #dcdcaa;
-            transform: translateY(-2px);
+            color: var(--accent);
+            transform: translateX(5px);
+            box-shadow: -5px 0 0 var(--accent);
         }
+
+        .nav-card:hover::before {
+            opacity: 1;
+        }
+
         .version-tag {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            color: #6a9955; /* 採用註解綠色 */
-            font-size: 0.9em;
-            opacity: 0.8;
+            color: var(--comment);
+            font-size: 0.8em;
+            opacity: 0.6;
+        }
+
+        /* 裝飾用的小點 */
+        .system-status {
+            margin-top: 40px;
+            font-size: 0.75em;
+            color: #555;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
     <div class="logo">CRAM TOEIC</div>
+    <div class="subtitle">// SYSTEM_READY: AUTHENTICATED</div>
     
-    <a href="en_to_zh.html" class="nav-card">START_VOCABULARY_TEST()</a>
+    <div class="nav-group">
+        <a href="en_to_zh.html" class="nav-card">START_TEST_EN_ZH</a>
 
-    <div class="version-tag">build_v1.2.3</div>
+        <a href="word_list.html" class="nav-card">DATABASE_EXPLORER</a>
+    </div>
+
+    <div class="system-status">Connection: stable | Encryption: active</div>
+    <div class="version-tag">build_v1.2.3_stable</div>
 </body>
 </html>
