@@ -155,7 +155,7 @@
                         document.querySelectorAll('.opt-btn').forEach(x => { if(x.innerText === `> ${currentItem.zh}`) x.classList.add('correct-ans'); });
                         // 失敗日誌：英 - 中
                         const errLog = document.getElementById('error-log');
-                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">FAIL: ${currentItem.en} - ${currentItem.zh}</div>` + errLog.innerHTML;
+                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;"> ${currentItem.en} - ${currentItem.zh}</div>` + errLog.innerHTML;
                     }
                     document.getElementById('accuracy-text').innerText = Math.round(totalCorrect/totalAttempts*100)+'%';
                     document.getElementById('next-btn').style.display = 'block';
