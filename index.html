@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOEIC 1218 v1.1.0 [Compiler Style]</title>
+    <title>TOEIC 1218 v1.1.1 [Fix_Style]</title>
     <style>
         :root {
-            --bg-color: #1e1e1e; /* VS Code 背景色 */
+            --bg-color: #1e1e1e;
             --card-bg: #252526; 
             --text-main: #d4d4d4;
-            --accent: #dcdcaa; /* 編譯器函數黃 */
-            --correct: #b5cea8; /* 編譯器數字綠 */
-            --wrong: #f44747;   /* 編譯器錯誤紅 */
+            --accent: #dcdcaa; /* 函數黃 */
+            --correct: #b5cea8; /* 數字綠 */
+            --wrong: #f44747;   /* 錯誤紅 */
             --border: #3c3c3c;
-            --comment: #6a9955; /* 註解綠 */
+            --comment: #6a9955;
         }
 
         body { 
@@ -23,26 +23,29 @@
             user-select: none; -webkit-tap-highlight-color: transparent;
         }
 
-        .version-tag {
-            position: fixed; bottom: 10px; right: 10px; font-size: 0.75em; color: var(--comment); font-family: monospace;
-        }
+        .version-tag { position: fixed; bottom: 10px; right: 10px; font-size: 0.75em; color: var(--comment); }
 
         .mode-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .mode-btn {
-            background: #2d2d2d; border: 1px solid var(--border); color: #888;
+            background: #2d2d2d; border: 1px solid var(--border); color: #888 !important;
             padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 0.85em; transition: 0.2s;
+            text-decoration: none !important;
         }
-        .mode-btn.active { background: #3e3e3e; color: var(--accent); border-color: var(--accent); font-weight: bold; }
+        /* 強制選中狀態顏色 */
+        .mode-btn.active { 
+            background: #3e3e3e !important; 
+            color: var(--accent) !important; 
+            border-color: var(--accent) !important; 
+            font-weight: bold; 
+        }
 
         .card { 
             background: var(--card-bg); padding: 30px; border-radius: 8px; 
             box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center; border: 1px solid var(--border);
         }
 
-        .word-container { display: flex; align-items: center; justify-content: center; gap: 15px; min-height: 100px; }
-        .word { font-size: 2.8em; font-weight: bold; color: var(--accent); line-height: 1.2; }
-        .main-speaker { font-size: 1.5em; cursor: pointer; padding: 10px; display: none; filter: sepia(1) saturate(5) hue-rotate(10deg); }
-
+        .word { font-size: 2.8em; font-weight: bold; color: var(--accent); line-height: 1.2; margin-bottom: 10px;}
+        
         .pos-badge { 
             display: inline-block; padding: 2px 10px; background: #333; color: var(--comment); 
             border-radius: 4px; font-size: 0.85em; margin-bottom: 25px; 
@@ -50,25 +53,27 @@
         }
 
         .options { display: grid; grid-template-columns: 1fr; gap: 12px; }
-        .opt-row { display: flex; gap: 8px; }
         
+        /* 選項按鈕樣式強化 */
         button.opt-btn { 
             flex: 1; padding: 16px; font-size: 1em; cursor: pointer; border: 1px solid var(--border); 
-            border-radius: 4px; background: #2d2d2d; color: var(--text-main); transition: 0.15s;
-            text-align: left; padding-left: 20px;
+            border-radius: 4px; background: #2d2d2d; color: var(--text-main) !important; 
+            transition: 0.15s; text-align: left; padding-left: 20px;
+            text-decoration: none !important; outline: none;
         }
-        button.opt-btn:hover { background: #37373d; border-color: var(--accent); }
+        button.opt-btn:hover { border-color: var(--accent); background: #37373d; }
         
         .opt-speak-btn {
             width: 55px; border-radius: 4px; border: 1px solid var(--border);
-            background: #2d2d2d; color: var(--accent); font-size: 1.2em; cursor: pointer;
+            background: #2d2d2d; color: var(--accent) !important; font-size: 1.2em; cursor: pointer;
         }
 
-        .correct-ans { background: #37373d !important; color: var(--correct) !important; font-weight: bold; border-color: var(--correct) !important; }
-        .wrong-ans { background: #37373d !important; color: var(--wrong) !important; font-weight: bold; border-color: var(--wrong) !important; }
+        /* 答題後的狀態顏色 - 使用 !important 確保不被蓋掉 */
+        .correct-ans { background: #37373d !important; color: var(--correct) !important; font-weight: bold !important; border-color: var(--correct) !important; }
+        .wrong-ans { background: #37373d !important; color: var(--wrong) !important; font-weight: bold !important; border-color: var(--wrong) !important; }
 
         #next-btn { 
-            margin-top: 25px; width: 100%; background: var(--accent); color: #1e1e1e; 
+            margin-top: 25px; width: 100%; background: var(--accent); color: #1e1e1e !important; 
             display: none; padding: 15px; border: none; border-radius: 4px; font-weight: bold; font-size: 1.1em; cursor: pointer;
         }
 
@@ -96,10 +101,7 @@
 </div>
 
 <div class="card">
-    <div class="word-container">
-        <div class="word" id="target-word">Initializing...</div>
-        <div id="main-speaker-icon" class="main-speaker" onclick="speakText(currentItem.en)">🔊</div>
-    </div>
+    <div class="word" id="target-word">Task_Ready...</div>
     <div id="pos-display" class="pos-badge"></div>
     <div class="options" id="options-box"></div>
     <button id="next-btn" onclick="renderQuestion()">RUN_NEXT_TASK()</button>
@@ -110,7 +112,7 @@
     </div>
 
     <div class="info-row">
-        <span>Status: <span style="color:var(--comment)">Ready</span></span>
+        <span>Status: <span style="color:var(--comment)">Online</span></span>
         <button class="btn-text" onclick="toggleHistory()">// Toggle Logs</button>
     </div>
 </div>
@@ -128,22 +130,16 @@
     </div>
 </div>
 
-<center><button class="btn-text" style="color:#f44747; margin-top:40px; text-decoration:none;" onclick="resetProgress()">[!] Hard_Reset_Progress</button></center>
-
-<div class="version-tag">v1.1.0-stable</div>
+<div class="version-tag">v1.1.1-hotfix</div>
 
 <script>
-    const STORAGE_KEY = 'toeic_mastered_v110'; 
+    const STORAGE_KEY = 'toeic_mastered_v110'; // 沿用上一版 Key
     let masterData = []; 
     let activePool = []; 
     let currentItem = {};
     let currentMode = 'EN_TO_ZH';
-    
-    // 答對率統計
     let totalAttempts = 0;
     let totalCorrect = 0;
-
-    const synth = window.speechSynthesis;
 
     async function init() {
         try {
@@ -161,7 +157,7 @@
             initHistoryDisplay();
             renderQuestion();
         } catch (e) {
-            document.getElementById('target-word').innerText = 'ERROR: LOAD_FAILED';
+            document.getElementById('target-word').innerText = 'ERROR: LOAD_FAIL';
         }
     }
 
@@ -188,17 +184,15 @@
     function changeMode(mode) {
         if(currentMode === mode) return;
         currentMode = mode;
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.id === `mode-${mode.toLowerCase().replace(/_/g, '-')}`));
+        // 強制更新按鈕外觀
+        document.querySelectorAll('.mode-btn').forEach(b => {
+            if(b.id === `mode-${mode.toLowerCase().replace(/_/g, '-')}`) {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
         renderQuestion();
-    }
-
-    function speakText(text) {
-        if (!text) return;
-        synth.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'en-US';
-        utter.rate = 0.9;
-        synth.speak(utter);
     }
 
     function renderQuestion() {
@@ -217,9 +211,6 @@
         
         document.getElementById('target-word').innerText = isEnToZh ? currentItem.en : currentItem.zh;
         document.getElementById('pos-display').innerText = `/* ${currentItem.pos} */`;
-        document.getElementById('main-speaker-icon').style.display = isEnToZh ? 'block' : 'none';
-        
-        if(isEnToZh) setTimeout(() => speakText(currentItem.en), 100);
 
         let opts = [currentItem];
         while(opts.length < 4) {
@@ -238,28 +229,21 @@
             btn.innerText = `> ${isEnToZh ? obj.zh : obj.en}`;
             btn.onclick = () => handleCheck(btn, obj);
             row.appendChild(btn);
-            if (!isEnToZh) {
-                const sBtn = document.createElement('button');
-                sBtn.className = 'opt-speak-btn'; sBtn.innerText = '🔊';
-                sBtn.onclick = (e) => { e.stopPropagation(); speakText(obj.en); };
-                row.appendChild(sBtn);
-            }
             box.appendChild(row);
         });
     }
 
     function handleCheck(btn, clickedObj) {
-        const allBtns = document.querySelectorAll('.opt-btn, .opt-speak-btn');
+        const allBtns = document.querySelectorAll('.opt-btn');
         allBtns.forEach(b => b.disabled = true);
         document.getElementById('pos-display').style.visibility = 'visible';
         
-        totalAttempts++; // 增加點擊總數
+        totalAttempts++;
 
         if (clickedObj.en === currentItem.en) {
-            totalCorrect++; // 增加答對總數
+            totalCorrect++;
             btn.classList.add('correct-ans');
             activePool = activePool.filter(i => i.en !== currentItem.en);
-            
             const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             if(!mastered.includes(currentItem.en)) {
                 mastered.push(currentItem.en);
@@ -289,10 +273,6 @@
     function toggleHistory() {
         const h = document.getElementById('history-area');
         h.style.display = h.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function resetProgress() {
-        if (confirm('CAUTION: WIPE_ALL_DATA?')) { localStorage.removeItem(STORAGE_KEY); location.reload(); }
     }
 
     init();
