@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOEIC 1218 極速練習</title>
+    <title>TOEIC 1218 v1.0.9</title>
     <style>
         :root {
             --bg-color: #0f0f0f;
@@ -20,6 +20,10 @@
             max-width: 600px; margin: 0 auto; padding: 20px; 
             background-color: var(--bg-color); color: var(--text-main); 
             user-select: none; -webkit-tap-highlight-color: transparent;
+        }
+
+        .version-tag {
+            position: fixed; bottom: 10px; right: 10px; font-size: 0.7em; color: #444; font-family: monospace;
         }
 
         .mode-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
@@ -49,7 +53,7 @@
         
         button.opt-btn { 
             flex: 1; padding: 16px; font-size: 1.1em; cursor: pointer; border: 1px solid var(--border); 
-            border-radius: 14px; background: #252525; color: var(--text-main); transition: 0.1s;
+            border-radius: 14px; background: #252525; color: var(--text-main); transition: 0.15s;
         }
         
         .opt-speak-btn {
@@ -57,7 +61,6 @@
             background: #222; color: var(--accent); font-size: 1.3em; cursor: pointer;
         }
 
-        /* 顏色修正與強化 */
         .correct-ans { background: var(--correct) !important; color: #000 !important; font-weight: bold; border-color: var(--correct) !important; }
         .wrong-ans { background: var(--wrong) !important; color: #000 !important; font-weight: bold; border-color: var(--wrong) !important; }
 
@@ -73,6 +76,7 @@
             background: #151515; padding: 12px; border-radius: 12px; height: 180px; 
             overflow-y: auto; font-size: 0.85em; border: 1px solid #222; text-align: left;
         }
+        .log-item { border-bottom: 1px solid #222; padding: 4px 0; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -84,7 +88,7 @@
 
 <div class="card">
     <div class="word-container">
-        <div class="word" id="target-word">載入中...</div>
+        <div class="word" id="target-word">校準中...</div>
         <div id="main-speaker-icon" class="main-speaker" onclick="speakText(currentItem.en)">🔊</div>
     </div>
     <div id="pos-display" class="pos-badge"></div>
@@ -92,7 +96,7 @@
     <button id="next-btn" onclick="renderQuestion()">下一題 NEXT</button>
     <div class="info-row">
         <span id="progress-text">剩餘：--</span>
-        <button class="btn-text" onclick="toggleHistory()">顯示/隱藏紀錄</button>
+        <button class="btn-text" onclick="toggleHistory()">數據紀錄</button>
     </div>
 </div>
 
@@ -111,8 +115,10 @@
 
 <center><button class="btn-text" style="color:#844; margin-top:40px;" onclick="resetProgress()">⚠️ 重置進度</button></center>
 
+<div class="version-tag">v1.0.9</div>
+
 <script>
-    const STORAGE_KEY = 'toeic_mastered_v8';
+    const STORAGE_KEY = 'toeic_mastered_v109'; 
     let masterData = []; 
     let activePool = []; 
     let currentItem = {};
@@ -145,17 +151,21 @@
     }
 
     function initHistoryDisplay() {
-        const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const masteredEnList = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         const log = document.getElementById('correct-log');
         log.innerHTML = '';
-        mastered.slice().reverse().forEach(en => addLogItem('correct-log', en));
+        
+        // 從 masterData 找回對應的中文
+        masteredEnList.slice().reverse().forEach(en => {
+            const item = masterData.find(m => m.en === en);
+            if(item) addLogItem('correct-log', `${item.en} (${item.zh})`);
+        });
     }
 
     function changeMode(mode) {
         if(currentMode === mode) return;
         currentMode = mode;
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.id === `mode-${mode.toLowerCase().replace(/_/g, '-')}`));
-        // 模式切換時視為新的一題，所以重新渲染
         renderQuestion();
     }
 
@@ -203,7 +213,6 @@
             const btn = document.createElement('button');
             btn.className = 'opt-btn';
             btn.innerText = isEnToZh ? obj.zh : obj.en;
-            // 綁定物件，判定更精準
             btn.onclick = () => handleCheck(btn, obj);
             row.appendChild(btn);
             if (!isEnToZh) {
@@ -221,9 +230,7 @@
         allBtns.forEach(b => b.disabled = true);
         document.getElementById('pos-display').style.visibility = 'visible';
         
-        const isCorrect = (clickedObj.en === currentItem.en);
-
-        if (isCorrect) {
+        if (clickedObj.en === currentItem.en) {
             btn.classList.add('correct-ans');
             activePool = activePool.filter(i => i.en !== currentItem.en);
             
@@ -232,7 +239,8 @@
                 mastered.push(currentItem.en);
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(mastered));
             }
-            addLogItem('correct-log', currentItem.en);
+            // 已掌握紀錄改為：英文 (中文)
+            addLogItem('correct-log', `${currentItem.en} (${currentItem.zh})`);
         } else {
             btn.classList.add('wrong-ans');
             document.querySelectorAll('.opt-btn').forEach(b => {
@@ -247,7 +255,7 @@
     function addLogItem(id, text) {
         const el = document.getElementById(id);
         const div = document.createElement('div');
-        div.style.borderBottom = "1px solid #222"; div.style.padding = "4px 0";
+        div.className = 'log-item';
         div.innerText = text;
         el.insertBefore(div, el.firstChild);
     }
