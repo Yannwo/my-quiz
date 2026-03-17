@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOEIC 1218 挑戰系統</title>
+    <title>TOEIC 1218 雙向挑戰系統</title>
     <style>
         :root {
             --bg-color: #0f0f0f;
@@ -21,37 +21,55 @@
             background-color: var(--bg-color); color: var(--text-main); 
         }
 
+        /* 模式切換器樣式 */
+        .mode-selector {
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
+        }
+        .mode-btn {
+            background: #222; border: 1px solid var(--border); color: #888;
+            padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em;
+        }
+        .mode-btn.active {
+            background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold;
+        }
+
         .card { 
             background: var(--card-bg); padding: 30px; border-radius: 20px; 
             box-shadow: 0 10px 40px rgba(0,0,0,0.6); text-align: center; 
-            border: 1px solid var(--border); margin-top: 10px;
+            border: 1px solid var(--border);
         }
 
         .word-container { 
             display: flex; align-items: center; justify-content: center; 
-            gap: 15px; margin-bottom: 5px; cursor: pointer; transition: 0.2s;
+            gap: 15px; margin-bottom: 10px; min-height: 80px;
         }
-        .word-container:active { transform: scale(0.95); }
 
-        .word { font-size: 3.2em; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
-        .speaker-icon { font-size: 1.5em; color: var(--accent); opacity: 0.7; }
-        
+        .word { font-size: 3em; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
+        .main-speaker { font-size: 1.2em; cursor: pointer; opacity: 0.8; }
+
         .pos-badge { 
             display: inline-block; padding: 4px 12px; background: #222; color: var(--accent); 
-            border-radius: 8px; font-size: 0.9em; font-weight: bold; margin-bottom: 30px; 
+            border-radius: 8px; font-size: 0.9em; font-weight: bold; margin-bottom: 25px; 
             visibility: hidden; border: 1px solid var(--accent);
         }
 
-        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .options { display: grid; grid-template-columns: 1fr; gap: 12px; }
         
-        button { 
-            padding: 16px; font-size: 1.05em; cursor: pointer; border: 1px solid var(--border); 
+        .opt-row { display: flex; gap: 8px; }
+        
+        button.opt-btn { 
+            flex: 1; padding: 16px; font-size: 1.1em; cursor: pointer; border: 1px solid var(--border); 
             border-radius: 12px; background: #252525; color: var(--text-main); 
-            transition: 0.15s; font-weight: 500; outline: none;
+            transition: 0.15s; font-weight: 500; text-align: center;
+        }
+        button.opt-btn:hover:not(:disabled) { background: #333; border-color: var(--accent); }
+        
+        /* 選項發音按鈕 */
+        .opt-speak-btn {
+            width: 55px; border-radius: 12px; border: 1px solid var(--border);
+            background: #222; color: var(--accent); font-size: 1.2em; cursor: pointer;
         }
 
-        button:hover:not(:disabled) { background: #333; border-color: var(--accent); }
-        
         .correct-ans { background: var(--correct) !important; color: #000 !important; font-weight: bold; border-color: var(--correct) !important; }
         .wrong-ans { background: var(--wrong) !important; color: #000 !important; font-weight: bold; border-color: var(--wrong) !important; }
 
@@ -62,26 +80,23 @@
         }
 
         .info-row { margin-top: 20px; font-size: 0.85em; color: #666; display: flex; justify-content: space-between; align-items: center; }
-        
-        .history-area { margin-top: 20px; display: none; }
-        .log-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .log-box { background: #151515; padding: 10px; border-radius: 10px; height: 250px; overflow-y: auto; font-size: 0.8em; border: 1px solid #222; text-align: left; }
-        
-        .control-btns { margin-top: 30px; text-align: center; border-top: 1px solid #222; padding-top: 20px; }
-        .btn-text { background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 0.85em; margin: 0 10px; }
-        .btn-text:hover { color: var(--accent); }
-        .btn-danger { color: #844; }
-        .btn-danger:hover { color: var(--wrong); }
+        .btn-text { background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; }
+        .btn-danger { color: #844; margin-top: 40px; width: 100%; text-align: center; display: block; }
     </style>
 </head>
 <body>
 
+<div class="mode-selector">
+    <button id="mode-en-zh" class="mode-btn active" onclick="setMode('EN_TO_ZH')">英選中</button>
+    <button id="mode-zh-en" class="mode-btn" onclick="setMode('ZH_TO_EN')">中選英</button>
+</div>
+
 <div class="card">
-    <div id="loader">🛰️ 正在載入 VocabularyList.csv...</div>
+    <div id="loader">📡 正在載入題庫...</div>
     <div id="quiz-ui" style="display:none;">
-        <div class="word-container" onclick="speakWord()" title="點擊發音">
+        <div class="word-container">
             <div class="word" id="target-word"></div>
-            <div class="speaker-icon">🔊</div>
+            <div id="main-speaker-icon" class="main-speaker" onclick="speakText(currentItem.en)">🔊</div>
         </div>
         
         <div id="pos-display" class="pos-badge"></div>
@@ -95,34 +110,39 @@
     </div>
 </div>
 
-<div id="history-area" class="history-area">
-    <div class="log-container">
-        <div class="log-box" id="error-log"><strong>❌ 錯誤紀錄</strong></div>
-        <div class="log-box" id="correct-log"><strong>✅ 已掌握</strong></div>
+<div id="history-area" style="display:none; margin-top:20px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div id="error-log" style="background:#151515; padding:10px; border-radius:10px; height:200px; overflow-y:auto; font-size:0.8em; border:1px solid #222;"><strong>❌ 錯誤</strong></div>
+        <div id="correct-log" style="background:#151515; padding:10px; border-radius:10px; height:200px; overflow-y:auto; font-size:0.8em; border:1px solid #222;"><strong>✅ 已掌握</strong></div>
     </div>
 </div>
 
-<div class="control-btns">
-    <button class="btn-text btn-danger" onclick="resetProgress()">⚠️ 重置所有測驗進度</button>
-</div>
+<button class="btn-text btn-danger" onclick="resetProgress()">⚠️ 重置所有測驗進度</button>
 
 <script>
-    const STORAGE_KEY = 'toeic_quiz_mastered_list';
+    const STORAGE_KEY = 'toeic_quiz_v3_mastered';
     let masterData = []; 
     let activePool = []; 
     let currentItem = {};
+    let currentMode = 'EN_TO_ZH'; // EN_TO_ZH 或 ZH_TO_EN
     const synth = window.speechSynthesis;
 
     async function init() {
         try {
             const res = await fetch('VocabularyList.csv');
-            if (!res.ok) throw new Error('找不到檔案');
             const buffer = await res.arrayBuffer();
             const content = new TextDecoder('utf-8').decode(buffer);
             parseCSV(content);
         } catch (e) {
-            document.getElementById('loader').innerText = '❌ 載入失敗，請檢查檔案名稱與路徑。';
+            document.getElementById('loader').innerText = '❌ 檔案載入失敗';
         }
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`mode-${mode.toLowerCase().replace(/_/g, '-')}`).classList.add('active');
+        renderQuestion();
     }
 
     function parseCSV(text) {
@@ -132,21 +152,18 @@
             return { en: cells[0], zh: cells[1], pos: cells[2] || "" };
         }).filter(item => item.en && item.zh);
 
-        loadFromStorage();
+        const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        activePool = masterData.filter(m => !mastered.includes(m.en));
+
         document.getElementById('loader').style.display = 'none';
         document.getElementById('quiz-ui').style.display = 'block';
         renderQuestion();
     }
 
-    function loadFromStorage() {
-        const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        activePool = masterData.filter(m => !mastered.includes(m.en));
-    }
-
-    function speakWord() {
-        if (!currentItem.en) return;
+    function speakText(text) {
+        if (!text) return;
         synth.cancel();
-        const utter = new SpeechSynthesisUtterance(currentItem.en);
+        const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'en-US';
         utter.rate = 0.85;
         synth.speak(utter);
@@ -154,9 +171,8 @@
 
     function renderQuestion() {
         if (activePool.length === 0) {
-            document.getElementById('target-word').innerText = "🏆 全數完成！";
+            document.getElementById('target-word').innerText = "🏆 完賽！";
             document.getElementById('options-box').innerHTML = "";
-            document.getElementById('progress-text').innerText = "進度：100%";
             return;
         }
 
@@ -165,42 +181,68 @@
         document.getElementById('progress-text').innerText = `剩餘：${activePool.length} / ${masterData.length}`;
 
         currentItem = activePool[Math.floor(Math.random() * activePool.length)];
-        document.getElementById('target-word').innerText = currentItem.en;
+        
+        const isEnToZh = (currentMode === 'EN_TO_ZH');
+        
+        // 設定題目文字
+        document.getElementById('target-word').innerText = isEnToZh ? currentItem.en : currentItem.zh;
         document.getElementById('pos-display').innerText = currentItem.pos;
+        
+        // 英選中才顯示主喇叭，且自動發音
+        document.getElementById('main-speaker-icon').style.display = isEnToZh ? 'block' : 'none';
+        if(isEnToZh) setTimeout(() => speakText(currentItem.en), 100);
 
-        // 自動發音
-        setTimeout(speakWord, 100);
-
-        let opts = [currentItem.zh];
-        while(opts.length < 4 && masterData.length >= 4) {
-            let r = masterData[Math.floor(Math.random() * masterData.length)].zh;
-            if(!opts.includes(r)) opts.push(r);
+        // 準備選項
+        let correctValue = isEnToZh ? currentItem.zh : currentItem.en;
+        let opts = [currentItem]; // 存物件以便中選英時拿英文發音
+        while(opts.length < 4) {
+            let r = masterData[Math.floor(Math.random() * masterData.length)];
+            if(!opts.find(o => o.en === r.en)) opts.push(r);
         }
         opts.sort(() => Math.random() - 0.5);
 
         const box = document.getElementById('options-box');
         box.innerHTML = '';
-        opts.forEach(o => {
-            const b = document.createElement('button');
-            b.innerText = o;
-            b.onclick = () => handleCheck(b, o);
-            box.appendChild(b);
+        opts.forEach(obj => {
+            const row = document.createElement('div');
+            row.className = 'opt-row';
+            
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn';
+            btn.innerText = isEnToZh ? obj.zh : obj.en;
+            btn.onclick = () => handleCheck(btn, isEnToZh ? obj.zh : obj.en);
+            row.appendChild(btn);
+
+            // 如果是中選英，加上小喇叭按鈕
+            if (!isEnToZh) {
+                const sBtn = document.createElement('button');
+                sBtn.className = 'opt-speak-btn';
+                sBtn.innerText = '🔊';
+                sBtn.onclick = (e) => { e.stopPropagation(); speakText(obj.en); };
+                row.appendChild(sBtn);
+            }
+            
+            box.appendChild(row);
         });
     }
 
     function handleCheck(btn, val) {
-        const btns = document.querySelectorAll('#options-box button');
-        btns.forEach(b => b.disabled = true);
+        const correctVal = (currentMode === 'EN_TO_ZH') ? currentItem.zh : currentItem.en;
+        const allBtns = document.querySelectorAll('.opt-btn, .opt-speak-btn');
+        allBtns.forEach(b => b.disabled = true);
+        
         document.getElementById('pos-display').style.visibility = 'visible';
 
-        if (val === currentItem.zh) {
+        if (val === correctVal) {
             btn.classList.add('correct-ans');
             activePool = activePool.filter(i => i.en !== currentItem.en);
             saveProgress();
             updateLog('correct-log', currentItem.en);
         } else {
             btn.classList.add('wrong-ans');
-            btns.forEach(b => { if(b.innerText === currentItem.zh) b.classList.add('correct-ans'); });
+            document.querySelectorAll('.opt-btn').forEach(b => {
+                if(b.innerText === correctVal) b.classList.add('correct-ans');
+            });
             updateLog('error-log', `${currentItem.en}: ${currentItem.zh}`);
         }
         document.getElementById('next-btn').style.display = 'block';
@@ -211,18 +253,10 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(mastered));
     }
 
-    function resetProgress() {
-        if (confirm('⚠️ 確定要重置嗎？\n這將會清除所有已掌握的單字進度，讓你重新從 1218 題開始。')) {
-            localStorage.removeItem(STORAGE_KEY);
-            location.reload();
-        }
-    }
-
     function updateLog(id, txt) {
         const el = document.getElementById(id);
         const div = document.createElement('div');
-        div.style.borderBottom = "1px solid #222";
-        div.style.padding = "5px 0";
+        div.style.borderBottom = "1px solid #222"; div.style.padding = "5px 0";
         div.innerText = txt;
         el.insertBefore(div, el.firstChild.nextSibling);
     }
@@ -230,6 +264,13 @@
     function toggleHistory() {
         const h = document.getElementById('history-area');
         h.style.display = h.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function resetProgress() {
+        if (confirm('確定要清除所有進度重新開始嗎？')) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
     }
 
     document.getElementById('next-btn').onclick = renderQuestion;
