@@ -81,12 +81,11 @@
 
     <script>
         const STORAGE_KEY = 'toeic_en_zh_mastered';
-        const STATS_KEY = 'toeic_en_zh_stats'; // 新增統計儲存鍵
+        const STATS_KEY = 'toeic_en_zh_stats';
+        const ERRORS_KEY = 'toeic_en_zh_errors';
+        
         let masterData = [], activePool = [], currentItem = {};
-        
-        // 從 LocalStorage 讀取或初始化數據
         let stats = JSON.parse(localStorage.getItem(STATS_KEY)) || { totalAttempts: 0, totalCorrect: 0 };
-        
         const synth = window.speechSynthesis;
 
         async function init() {
@@ -99,7 +98,7 @@
                     return { en: c[0], zh: c[1], pos: c[2] || "" };
                 }).filter(i => i.en && i.zh);
                 refreshPool();
-                updateStatsUI(); // 初始化統計界面
+                updateStatsUI();
                 renderQuestion();
             } catch (e) { document.getElementById('target-word').innerText = 'LOAD_ERROR'; }
         }
@@ -115,17 +114,26 @@
         function refreshPool() {
             const m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             activePool = masterData.filter(d => !m.includes(d.en));
+            
+            // 渲染正確紀錄
             const log = document.getElementById('correct-log'); log.innerHTML = '';
             m.slice().reverse().forEach(en => {
                 const item = masterData.find(i => i.en === en);
                 if(item) log.innerHTML += `<div style="border-bottom:1px solid #333; padding:2px 0;">${item.en} - ${item.zh}</div>`;
+            });
+
+            // 渲染錯誤紀錄
+            const e = JSON.parse(localStorage.getItem(ERRORS_KEY) || '[]');
+            const errLog = document.getElementById('error-log'); errLog.innerHTML = '';
+            e.slice().reverse().forEach(errStr => {
+                errLog.innerHTML += `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">FAIL: ${errStr}</div>`;
             });
         }
 
         function updateStatsUI() {
             const accuracy = stats.totalAttempts === 0 ? 0 : Math.round(stats.totalCorrect / stats.totalAttempts * 100);
             document.getElementById('accuracy-text').innerText = accuracy + '%';
-            localStorage.setItem(STATS_KEY, JSON.stringify(stats)); // 同步儲存到硬碟
+            localStorage.setItem(STATS_KEY, JSON.stringify(stats));
         }
 
         function renderQuestion() {
@@ -151,9 +159,9 @@
                     document.querySelectorAll('.opt-btn').forEach(x => x.disabled = true);
                     document.getElementById('pos-display').style.visibility = 'visible';
                     
-                    stats.totalAttempts++; // 累加次數
+                    stats.totalAttempts++;
                     if(o.en === currentItem.en) {
-                        stats.totalCorrect++; // 累加正確數
+                        stats.totalCorrect++;
                         b.classList.add('correct-ans');
                         let m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                         if(!m.includes(currentItem.en)) {
@@ -166,19 +174,28 @@
                     } else { 
                         b.classList.add('wrong-ans'); 
                         document.querySelectorAll('.opt-btn').forEach(x => { if(x.innerText === `> ${currentItem.zh}`) x.classList.add('correct-ans'); });
+                        
+                        // 儲存錯誤紀錄
+                        let e = JSON.parse(localStorage.getItem(ERRORS_KEY) || '[]');
+                        const errContent = `${currentItem.en} - ${currentItem.zh}`;
+                        e.push(errContent);
+                        if(e.length > 50) e.shift();
+                        localStorage.setItem(ERRORS_KEY, JSON.stringify(e));
+
                         const errLog = document.getElementById('error-log');
-                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;"> ${currentItem.en} - ${currentItem.zh}</div>` + errLog.innerHTML;
+                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">FAIL: ${errContent}</div>` + errLog.innerHTML;
                     }
-                    updateStatsUI(); // 更新 UI 與儲存數據
+                    updateStatsUI();
                     document.getElementById('next-btn').style.display = 'block';
                 };
                 box.appendChild(b);
             });
         }
         function resetProgress() { 
-            if(confirm('Reset all progress and stats for EN>ZH?')) { 
+            if(confirm('Reset all progress, stats, and error logs for EN>ZH?')) { 
                 localStorage.removeItem(STORAGE_KEY); 
-                localStorage.removeItem(STATS_KEY); // 同步清除統計
+                localStorage.removeItem(STATS_KEY);
+                localStorage.removeItem(ERRORS_KEY);
                 location.reload(); 
             } 
         }
