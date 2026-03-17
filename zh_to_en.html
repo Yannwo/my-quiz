@@ -3,38 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CRAM TOEIC // EN-ZH</title>
+    <title>CRAM TOEIC // ZH-EN</title>
     <style>
         :root { --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; --accent: #dcdcaa; --correct: #b5cea8; --wrong: #f44747; --border: #3c3c3c; --comment: #6a9955; --nav-bg: #333333; }
         body { font-family: 'Consolas', 'Monaco', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: var(--bg-color); color: var(--text-main); user-select: none; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
 
+        /* 模式切換 */
         .mode-switcher { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; padding-top: 10px; }
         .mode-tab { padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border); background: #2d2d2d; color: #888; text-decoration: none; font-size: 0.85em; font-weight: bold; transition: 0.2s; }
         .mode-tab.active { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 8px rgba(220, 204, 170, 0.2); }
 
+        /* 選單導航 */
         .menu-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; cursor: pointer; z-index: 100; }
         .menu-btn div { width: 25px; height: 3px; background-color: var(--text-main); margin: 5px 0; border-radius: 2px; }
         .side-nav { position: fixed; top: 0; left: -250px; width: 220px; height: 100%; background-color: var(--nav-bg); transition: 0.3s; z-index: 99; padding-top: 60px; border-right: 1px solid var(--border); box-shadow: 10px 0 20px rgba(0,0,0,0.5); }
         .side-nav.open { left: 0; }
         .nav-item { padding: 15px 25px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid #444; text-decoration: none; display: block; font-size: 0.9em; }
 
+        /* 測驗卡片 */
         .card { background: var(--card-bg); padding: 20px 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        .word-header { display: flex; align-items: center; justify-content: center; min-height: 100px; gap: 10px; }
-        .word { font-size: clamp(1.5rem, 8vw, 2.8rem); font-weight: bold; color: var(--accent) !important; }
-        .speaker-btn { font-size: 1.5em; cursor: pointer; color: var(--accent); background: none; border: none; outline: none; }
+        .word-header { display: flex; align-items: center; justify-content: center; min-height: 100px; }
+        .word { font-size: clamp(1.5rem, 8vw, 2.5rem); font-weight: bold; color: var(--accent) !important; }
         .pos-badge { display: inline-block; padding: 2px 10px; background: #333; color: var(--comment); border-radius: 4px; font-size: 0.85em; margin-bottom: 20px; visibility: hidden; border: 1px solid var(--comment); }
 
+        /* 選項與按鈕 */
         .options { display: grid; grid-template-columns: 1fr; gap: 12px; }
-        button.opt-btn { padding: 16px; border: 1px solid var(--border); border-radius: 4px; background: #2d2d2d; color: var(--text-main) !important; text-align: left; cursor: pointer; outline: none; }
+        .opt-row { display: flex; gap: 8px; }
+        button.opt-btn { flex: 1; padding: 16px; border: 1px solid var(--border); border-radius: 4px; background: #2d2d2d; color: var(--text-main) !important; text-align: left; cursor: pointer; outline: none; }
+        .row-speak-btn { width: 50px; border-radius: 4px; border: 1px solid var(--border); background: #2d2d2d; color: var(--accent); font-size: 1.2em; cursor: pointer; }
         .correct-ans { background: #37373d !important; color: var(--correct) !important; border-color: var(--correct) !important; font-weight: bold; }
         .wrong-ans { background: #37373d !important; color: var(--wrong) !important; border-color: var(--wrong) !important; font-weight: bold; }
         #next-btn { margin-top: 25px; width: 100%; background: var(--accent); color: #1e1e1e !important; display: none; padding: 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
 
+        /* 統計與紀錄 */
         .stats-bar { background: #252526; padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-top: 20px; display: flex; justify-content: space-around; font-size: 0.85em; color: var(--comment); }
         .history-area { margin-top: 20px; display: none; }
         .history-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .history-box { background: #1e1e1e; padding: 12px; height: 150px; overflow-y: auto; font-size: 0.82em; border: 1px solid var(--border); text-align: left; color: #9cdcfe; }
 
+        /* 底部控制 */
         .bottom-controls { margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 15px; padding-bottom: 40px; }
         .btn-text { background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-family: inherit; font-size: 0.8em; }
         .reset-btn { color: var(--wrong); background: none; border: 1px solid #444; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
@@ -49,15 +56,12 @@
     </nav>
 
     <div class="mode-switcher">
-        <a href="en_to_zh.html" class="mode-tab active">EN > ZH</a>
-        <a href="zh_to_en.html" class="mode-tab">ZH > EN</a>
+        <a href="en_to_zh.html" class="mode-tab">EN > ZH</a>
+        <a href="zh_to_en.html" class="mode-tab active">ZH > EN</a>
     </div>
 
     <div class="card">
-        <div class="word-header">
-            <div class="word" id="target-word">Init...</div>
-            <button class="speaker-btn" onclick="speakText(currentItem.en)">🔊</button>
-        </div>
+        <div class="word-header"><div class="word" id="target-word">Init...</div></div>
         <div id="pos-display" class="pos-badge"></div>
         <div class="options" id="options-box"></div>
         <button id="next-btn" onclick="renderQuestion()">RUN_NEXT()</button>
@@ -81,10 +85,10 @@
 
     <script>
         const STORAGE_KEY = 'toeic_zh_en_mastered';
-        const STATS_KEY = 'toeic_zh_en_stats'; // 新增統計儲存鍵
+        const STATS_KEY = 'toeic_zh_en_stats';
         let masterData = [], activePool = [], currentItem = {};
         
-        // 從 LocalStorage 讀取或初始化數據
+        // 從 LocalStorage 載入統計數據
         let stats = JSON.parse(localStorage.getItem(STATS_KEY)) || { totalAttempts: 0, totalCorrect: 0 };
         
         const synth = window.speechSynthesis;
@@ -99,7 +103,7 @@
                     return { en: c[0], zh: c[1], pos: c[2] || "" };
                 }).filter(i => i.en && i.zh);
                 refreshPool();
-                updateStatsUI(); // 初始化統計界面
+                updateStatsUI();
                 renderQuestion();
             } catch (e) { document.getElementById('target-word').innerText = 'LOAD_ERROR'; }
         }
@@ -116,16 +120,17 @@
             const m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             activePool = masterData.filter(d => !m.includes(d.en));
             const log = document.getElementById('correct-log'); log.innerHTML = '';
+            // 初始化顯示已完成清單 (中 - 英)
             m.slice().reverse().forEach(en => {
                 const item = masterData.find(i => i.en === en);
-                if(item) log.innerHTML += `<div style="border-bottom:1px solid #333; padding:2px 0;">${item.en} - ${item.zh}</div>`;
+                if(item) log.innerHTML += `<div style="border-bottom:1px solid #333; padding:2px 0;">${item.zh} - ${item.en}</div>`;
             });
         }
 
         function updateStatsUI() {
             const accuracy = stats.totalAttempts === 0 ? 0 : Math.round(stats.totalCorrect / stats.totalAttempts * 100);
             document.getElementById('accuracy-text').innerText = accuracy + '%';
-            localStorage.setItem(STATS_KEY, JSON.stringify(stats)); // 同步儲存到硬碟
+            localStorage.setItem(STATS_KEY, JSON.stringify(stats));
         }
 
         function renderQuestion() {
@@ -133,10 +138,9 @@
             document.getElementById('next-btn').style.display = 'none';
             document.getElementById('pos-display').style.visibility = 'hidden';
             currentItem = activePool[Math.floor(Math.random() * activePool.length)];
-            document.getElementById('target-word').innerText = currentItem.en;
+            document.getElementById('target-word').innerText = currentItem.zh;
             document.getElementById('pos-display').innerText = `/* ${currentItem.pos} */`;
             document.getElementById('progress-text').innerText = activePool.length;
-            speakText(currentItem.en);
             
             let opts = [currentItem];
             while(opts.length < 4) {
@@ -146,39 +150,45 @@
             opts.sort(()=>Math.random()-0.5);
             const box = document.getElementById('options-box'); box.innerHTML = '';
             opts.forEach(o => {
-                const b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = `> ${o.zh}`;
+                const row = document.createElement('div'); row.className = 'opt-row';
+                const b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = `> ${o.en}`;
+                const s = document.createElement('button'); s.className = 'row-speak-btn'; s.innerText = '🔊';
+                s.onclick = (e) => { e.stopPropagation(); speakText(o.en); };
+                
                 b.onclick = () => {
-                    document.querySelectorAll('.opt-btn').forEach(x => x.disabled = true);
+                    document.querySelectorAll('.opt-btn, .row-speak-btn').forEach(x => x.disabled = true);
                     document.getElementById('pos-display').style.visibility = 'visible';
                     
-                    stats.totalAttempts++; // 累加次數
+                    stats.totalAttempts++;
                     if(o.en === currentItem.en) {
-                        stats.totalCorrect++; // 累加正確數
-                        b.classList.add('correct-ans');
+                        stats.totalCorrect++;
+                        b.classList.add('correct-ans'); speakText(currentItem.en);
                         let m = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                         if(!m.includes(currentItem.en)) {
                             m.push(currentItem.en);
                             localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
                         }
                         activePool = activePool.filter(i => i.en !== currentItem.en);
+                        // 正確日誌：中 - 英
                         const log = document.getElementById('correct-log');
-                        log.innerHTML = `<div style="border-bottom:1px solid #333; padding:2px 0;">${currentItem.en} - ${currentItem.zh}</div>` + log.innerHTML;
+                        log.innerHTML = `<div style="border-bottom:1px solid #333; padding:2px 0;">${currentItem.zh} - ${currentItem.en}</div>` + log.innerHTML;
                     } else { 
                         b.classList.add('wrong-ans'); 
-                        document.querySelectorAll('.opt-btn').forEach(x => { if(x.innerText === `> ${currentItem.zh}`) x.classList.add('correct-ans'); });
+                        document.querySelectorAll('.opt-btn').forEach(x => { if(x.innerText === `> ${currentItem.en}`) x.classList.add('correct-ans'); });
+                        // 失敗日誌：中 - 英
                         const errLog = document.getElementById('error-log');
-                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">FAIL: ${currentItem.en} - ${currentItem.zh}</div>` + errLog.innerHTML;
+                        errLog.innerHTML = `<div style="border-bottom:1px solid #333; color:var(--wrong); padding:2px 0;">${currentItem.zh} - ${currentItem.en}</div>` + errLog.innerHTML;
                     }
-                    updateStatsUI(); // 更新 UI 與儲存數據
+                    updateStatsUI();
                     document.getElementById('next-btn').style.display = 'block';
                 };
-                box.appendChild(b);
+                row.appendChild(b); row.appendChild(s); box.appendChild(row);
             });
         }
         function resetProgress() { 
-            if(confirm('Reset all progress and stats for EN>ZH?')) { 
+            if(confirm('Reset all progress and stats for ZH>EN?')) { 
                 localStorage.removeItem(STORAGE_KEY); 
-                localStorage.removeItem(STATS_KEY); // 同步清除統計
+                localStorage.removeItem(STATS_KEY);
                 location.reload(); 
             } 
         }
