@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CRAM TOEIC // Grammar_Lab</title>
+    <title>CRAM TOEIC // Grammar_Lab_v1</title>
     <style>
         :root { 
             --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; 
@@ -13,8 +13,7 @@
         body { 
             font-family: 'Consolas', 'Monaco', sans-serif; max-width: 600px; 
             margin: 0 auto; padding: 20px; background-color: var(--bg-color); 
-            color: var(--text-main); user-select: none; -webkit-tap-highlight-color: transparent;
-            min-height: 95vh; display: flex; flex-direction: column; justify-content: center;
+            color: var(--text-main); user-select: none;
         }
 
         /* 導覽 */
@@ -24,27 +23,29 @@
         .side-nav.open { left: 0; }
         .nav-item { padding: 15px 25px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid #444; text-decoration: none; display: block; font-size: 0.9em; }
 
-        .card { background: var(--card-bg); padding: 40px 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; }
-        .word-header { min-height: 100px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-        .word { font-size: clamp(1.8rem, 7vw, 2.5rem); font-weight: bold; color: var(--accent); line-height: 1.2; }
+        .card { background: var(--card-bg); padding: 30px 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .word { font-size: clamp(1.8rem, 7vw, 2.5rem); font-weight: bold; color: var(--accent); margin-bottom: 20px; display: block; }
         
-        .step-indicator { font-size: 0.75em; color: var(--comment); margin-bottom: 20px; letter-spacing: 2px; border-bottom: 1px dashed #444; padding-bottom: 10px; }
-        .question-label { margin: 20px 0; font-size: 1.1em; color: #9cdcfe; font-weight: bold; }
+        .section-title { font-size: 0.85em; color: #9cdcfe; margin: 20px 0 10px 0; text-align: left; border-left: 3px solid #9cdcfe; padding-left: 10px; }
 
-        .options { display: flex; flex-direction: column; gap: 12px; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 20px; }
         button.opt-btn { 
-            width: 100%; padding: 18px 20px; border: 1px solid var(--border); 
+            width: 100%; padding: 14px 15px; border: 1px solid var(--border); 
             border-radius: 4px; background: #2d2d2d; color: var(--text-main); 
-            text-align: left; cursor: pointer; outline: none; font-size: 1rem; 
-            transition: all 0.2s; box-sizing: border-box;
+            text-align: left; cursor: pointer; outline: none; font-size: 0.95rem; 
+            transition: 0.2s; font-family: inherit;
         }
+        button.opt-btn.selected { border-color: var(--accent); background: #3e3e3e; box-shadow: 0 0 8px rgba(220, 220, 170, 0.3); }
         
-        /* 狀態顏色 - 強化顯示 */
-        .correct-ans { background: #37373d !important; color: var(--correct) !important; border-color: var(--correct) !important; font-weight: bold; box-shadow: inset 0 0 10px rgba(181, 206, 168, 0.2); }
-        .wrong-ans { background: #37373d !important; color: var(--wrong) !important; border-color: var(--wrong) !important; }
+        /* 審核顏色 */
+        .correct-ans { border-color: var(--correct) !important; color: var(--correct) !important; background: rgba(181, 206, 168, 0.1) !important; }
+        .wrong-ans { border-color: var(--wrong) !important; color: var(--wrong) !important; background: rgba(244, 71, 71, 0.1) !important; }
 
-        #next-btn { margin-top: 25px; width: 100%; background: var(--accent); color: #1e1e1e; display: none; padding: 18px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
-        .stats-bar { margin-top: 25px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid var(--border); display: flex; justify-content: center; font-size: 0.85em; color: var(--comment); }
+        .action-btn { width: 100%; padding: 18px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1em; margin-top: 10px; font-family: inherit; }
+        #submit-btn { background: #dcdcaa; color: #1e1e1e; }
+        #next-btn { background: #6a9955; color: white; display: none; }
+
+        .stats-bar { margin-top: 25px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.85em; color: var(--comment); }
     </style>
 </head>
 <body onclick="closeNav()">
@@ -52,133 +53,135 @@
     <button class="menu-btn" onclick="event.stopPropagation(); toggleNav()"><div></div><div></div><div></div></button>
     <nav id="sideNav" class="side-nav" onclick="event.stopPropagation()">
         <a href="index.html" class="nav-item">🏠 HOME</a>
-        <a href="en_to_zh.html" class="nav-item">Vocabulary Test (EN>ZH)</a>
-        <a href="zh_to_en.html" class="nav-item">Vocabulary Test (ZH>EN)</a>
+        <a href="en_to_zh.html" class="nav-item">Vocabulary Test</a>
         <a href="grammar_test.html" class="nav-item" style="color:var(--accent)">🧪 Grammar Lab</a>
         <a href="word_list.html" class="nav-item">📚 Word Bank</a>
     </nav>
 
     <div class="card">
-        <div class="step-indicator" id="step-ui">STEP_01 / PHASE_POS</div>
-        <div class="word-header"><div class="word" id="target-word">SYNCING...</div></div>
-        <div class="question-label" id="q-label">請選擇詞性：</div>
-        
-        <div id="options-box" class="options"></div>
-        <button id="next-btn" onclick="renderQuestion()">RUN_NEXT_STATION()</button>
+        <span class="word" id="target-word">SYNCING...</span>
+
+        <div class="section-title">PHASE_01: PART_OF_SPEECH</div>
+        <div id="pos-options" class="options-grid"></div>
+
+        <div class="section-title">PHASE_02: CHINESE_MEANING</div>
+        <div id="zh-options" class="options-grid"></div>
+
+        <button id="submit-btn" class="action-btn" onclick="checkAnswers()">CHECK_ANSWERS()</button>
+        <button id="next-btn" class="action-btn" onclick="initQuestion()">NEXT_CHALLENGE()</button>
 
         <div class="stats-bar">
-            <div>Grammar Queue: <span id="progress-text" style="color:var(--accent);">--</span></div>
+            Queue: <span id="progress-text">--</span>
         </div>
     </div>
 
     <script>
         let masterData = [], activePool = [], currentItem = {};
-        let currentStep = 1;
+        let selectedPOS = null, selectedZH = null;
 
         async function init() {
             try {
                 const res = await fetch('VocabularyList.csv');
                 const content = new TextDecoder('utf-8').decode(await res.arrayBuffer());
                 const rows = content.split(/\r?\n/).filter(r => r.includes(','));
-                
                 masterData = rows.slice(1).map(r => {
                     const c = r.split(',').map(v => v.replace(/^"|"$/g, '').trim());
                     return { en: c[0], zh: c[1], pos: c[2] || "", filter: c[3] || "0" };
                 }).filter(i => i.en && i.filter === "1"); 
-
                 activePool = [...masterData];
-                renderQuestion();
+                initQuestion();
             } catch (e) { document.getElementById('target-word').innerText = 'LOAD_ERROR'; }
         }
 
-        function renderQuestion() {
+        function initQuestion() {
             if(!activePool.length) { 
-                document.getElementById('target-word').innerText = "DONE"; 
-                document.getElementById('q-label').innerText = "練習結束";
+                document.getElementById('target-word').innerText = "ALL_COMPLETED"; 
                 return; 
             }
-            currentStep = 1;
             currentItem = activePool[Math.floor(Math.random() * activePool.length)];
             document.getElementById('target-word').innerText = currentItem.en;
             document.getElementById('progress-text').innerText = activePool.length;
+            
+            selectedPOS = null; selectedZH = null;
+            document.getElementById('submit-btn').style.display = 'block';
             document.getElementById('next-btn').style.display = 'none';
-            showPOSPhase();
+
+            renderPOS();
+            renderZH();
         }
 
-        function showPOSPhase() {
-            currentStep = 1;
-            document.getElementById('step-ui').innerText = "STEP_01 / PHASE_POS";
-            document.getElementById('q-label').innerText = "此單字的正確詞性？";
-            
-            const posOptions = ["prep.", "conj.", "prep. / conj."]; 
-            const box = document.getElementById('options-box');
+        function renderPOS() {
+            const box = document.getElementById('pos-options');
             box.innerHTML = '';
-            
-            posOptions.forEach(opt => {
-                const b = document.createElement('button');
-                b.className = 'opt-btn';
-                b.innerText = `> ${opt}`;
-                
-                b.onclick = () => {
-                    // 禁用所有按鈕防止連點
-                    document.querySelectorAll('.opt-btn').forEach(btn => btn.disabled = true);
-                    
-                    const cleanCSV = currentItem.pos.trim().toLowerCase();
-                    const cleanOpt = opt.trim().toLowerCase();
-
-                    if (cleanOpt === cleanCSV) {
-                        b.classList.add('correct-ans');
-                        setTimeout(showMeaningPhase, 600);
-                    } else {
-                        b.classList.add('wrong-ans');
-                        // 強制顯示正確答案：遍歷所有按鈕，找到文字匹配的那一個變綠
-                        document.querySelectorAll('.opt-btn').forEach(btn => {
-                            if (btn.innerText.toLowerCase().includes(cleanCSV)) {
-                                btn.classList.add('correct-ans');
-                            }
-                        });
-                        document.getElementById('next-btn').style.display = 'block';
-                    }
+            const opts = ["prep.", "conj.", "prep. / conj."];
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn pos-opt';
+                btn.innerText = `> ${opt}`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.pos-opt').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedPOS = opt;
                 };
-                box.appendChild(b);
+                box.appendChild(btn);
             });
         }
 
-        function showMeaningPhase() {
-            currentStep = 2;
-            document.getElementById('step-ui').innerText = "STEP_02 / PHASE_MEANING";
-            document.getElementById('q-label').innerText = "此單字的正確中文意思？";
-
-            let opts = [currentItem];
-            while(opts.length < 4) {
+        function renderZH() {
+            const box = document.getElementById('zh-options');
+            box.innerHTML = '';
+            let pool = [currentItem];
+            while(pool.length < 4) {
                 let r = masterData[Math.floor(Math.random()*masterData.length)];
-                if(!opts.find(o=>o.en===r.en)) opts.push(r);
+                if(!pool.find(o=>o.en===r.en)) pool.push(r);
             }
-            opts.sort(()=>Math.random()-0.5);
-
-            const box = document.getElementById('options-box');
-            box.innerHTML = '';
-            opts.forEach(o => {
-                const b = document.createElement('button');
-                b.className = 'opt-btn';
-                b.innerText = `> ${o.zh}`;
-                b.onclick = () => {
-                    document.querySelectorAll('.opt-btn').forEach(btn => btn.disabled = true);
-                    if (o.en === currentItem.en) {
-                        b.classList.add('correct-ans');
-                        activePool = activePool.filter(i => i.en !== currentItem.en);
-                        setTimeout(renderQuestion, 600);
-                    } else {
-                        b.classList.add('wrong-ans');
-                        // 顯示正確中文答案
-                        document.querySelectorAll('.opt-btn').forEach(btn => {
-                            if (btn.innerText === `> ${currentItem.zh}`) btn.classList.add('correct-ans');
-                        });
-                        document.getElementById('next-btn').style.display = 'block';
-                    }
+            pool.sort(()=>Math.random()-0.5).forEach(o => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn zh-opt';
+                btn.innerText = `> ${o.zh}`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.zh-opt').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedZH = o.en;
                 };
-                box.appendChild(b);
+                box.appendChild(btn);
             });
+        }
+
+        function checkAnswers() {
+            if(!selectedPOS || !selectedZH) { alert("Please select both POS and Meaning!"); return; }
+            
+            let isCorrect = true;
+            const cleanCSVPos = currentItem.pos.trim().toLowerCase();
+
+            // 審核詞性
+            document.querySelectorAll('.pos-opt').forEach(btn => {
+                btn.onclick = null;
+                const btnText = btn.innerText.replace('> ', '').trim().toLowerCase();
+                if(btnText === cleanCSVPos) btn.classList.add('correct-ans');
+                if(btn.classList.contains('selected') && btnText !== cleanCSVPos) {
+                    btn.classList.add('wrong-ans');
+                    isCorrect = false;
+                }
+            });
+
+            // 審核中文
+            document.querySelectorAll('.zh-opt').forEach(btn => {
+                btn.onclick = null;
+                const btnText = btn.innerText.replace('> ', '');
+                if(btnText === currentItem.zh) btn.classList.add('correct-ans');
+                if(btn.classList.contains('selected') && btnText !== currentItem.zh) {
+                    btn.classList.add('wrong-ans');
+                    isCorrect = false;
+                }
+            });
+
+            if(isCorrect) {
+                activePool = activePool.filter(i => i.en !== currentItem.en);
+            }
+
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'block';
         }
 
         function toggleNav() { document.getElementById('sideNav').classList.toggle('open'); }
