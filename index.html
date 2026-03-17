@@ -2,33 +2,41 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>我的雲端單字庫測驗</title>
+    <title>TOEIC 單字測驗 - 本地版</title>
     <style>
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #f5f7f9; color: #333; }
-        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
-        .word { font-size: 3em; margin-bottom: 5px; font-weight: 800; color: #1a73e8; }
-        .pos-badge { display: inline-block; padding: 4px 15px; background: #e8f0fe; color: #1967d2; border-radius: 20px; font-size: 0.9em; font-weight: bold; margin-bottom: 25px; visibility: hidden; }
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; max-width: 650px; margin: 20px auto; padding: 20px; background-color: #f8f9fa; color: #333; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
+        .file-selector { border: 2px dashed #4285f4; padding: 30px; border-radius: 15px; background: #f1f6ff; cursor: pointer; margin-bottom: 20px; }
+        .file-selector:hover { background: #e8f0fe; }
+        .word { font-size: 3.2em; font-weight: 800; color: #1a73e8; margin-bottom: 0px; }
+        .pos-badge { display: inline-block; padding: 5px 15px; background: #e8f0fe; color: #1967d2; border-radius: 20px; font-size: 0.95em; font-weight: bold; margin-bottom: 25px; visibility: hidden; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        button { padding: 18px; font-size: 1.1em; cursor: pointer; border: 2px solid #eee; border-radius: 12px; background: #fff; transition: all 0.2s; font-weight: 500; }
+        button { padding: 18px; font-size: 1.1em; cursor: pointer; border: 2px solid #eee; border-radius: 12px; background: #fff; transition: 0.2s; font-weight: 500; }
         button:hover:not(:disabled) { border-color: #1a73e8; background: #f1f7ff; transform: translateY(-2px); }
         .correct { background: #2ecc71 !important; color: white; border-color: #27ae60 !important; }
         .wrong { background: #e74c3c !important; color: white; border-color: #c0392b !important; }
-        #next-btn { margin-top: 25px; width: 100%; background: #3c4043; color: white; display: none; padding: 16px; border: none; border-radius: 12px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
+        #next-btn { margin-top: 25px; width: 100%; background: #3c4043; color: white; display: none; padding: 18px; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1em; cursor: pointer; }
         .history { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .history-box { background: #fff; padding: 15px; border-radius: 12px; height: 300px; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        h3 { font-size: 1em; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; display: flex; justify-content: space-between; }
-        .log-item { padding: 8px; border-bottom: 1px solid #f9f9f9; font-size: 0.9em; line-height: 1.4; }
-        .err-text { color: #d93025; font-weight: bold; }
-        .ok-text { color: #188038; font-weight: bold; }
+        .history-box { background: #fff; padding: 15px; border-radius: 12px; height: 350px; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .log-item { padding: 10px; border-bottom: 1px solid #f1f1f1; font-size: 0.9em; line-height: 1.5; border-left: 5px solid transparent; margin-bottom: 5px; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; font-size: 1.1em; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="loading">📡 正在從雲端抓取單字...</div>
+    <div id="setup-area">
+        <div class="file-selector" onclick="document.getElementById('fileInput').click()">
+            <h2 style="margin-top:0">📁 載入單字庫</h2>
+            <p>請點擊選取你的 <strong>VocabularyList.csv</strong></p>
+            <input type="file" id="fileInput" accept=".csv" style="display:none">
+        </div>
+        <p style="font-size: 0.8em; color: #666;">格式要求：A欄英文, B欄中文, C欄詞性</p>
+    </div>
+
     <div id="quiz-area" style="display:none;">
-        <div class="word" id="target-word"></div>
-        <div id="pos-display" class="pos-badge">詞性載入中</div>
+        <div class="word" id="target-word">Ready?</div>
+        <div id="pos-display" class="pos-badge"></div>
         <div class="options" id="options-box"></div>
         <button id="next-btn">下一題</button>
     </div>
@@ -36,42 +44,61 @@
 
 <div class="history">
     <div class="history-box">
-        <h3><span class="err-text">❌ 錯誤紀錄</span> <span id="err-count">0</span></h3>
+        <h3 style="color: #d93025;">❌ 錯誤紀錄 (需複習)</h3>
         <div id="error-log"></div>
     </div>
     <div class="history-box">
-        <h3><span class="ok-text">✅ 答對紀錄</span> <span id="ok-count">0</span></h3>
+        <h3 style="color: #188038;">✅ 答對紀錄</h3>
         <div id="correct-log"></div>
     </div>
 </div>
 
 <script>
-    // 你的正確 CSV 網址
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkd7zuU7UYkZj7EG6X_22b-MrLil5Vy8Cw0dTx1J7SEznxng2Aj5-TQMLk4hSMp8ohn1syOb4I2url/pub?output=csv";
-
     let vocabulary = [];
     let currentQuiz = {};
-    let scores = { ok: 0, err: 0 };
 
-    async function fetchWords() {
-        try {
-            const response = await fetch(sheetUrl);
-            const data = await response.text();
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 使用 FileReader 讀取檔案
+        const reader = new FileReader();
+        
+        // 讀取為 ArrayBuffer 以便處理可能的編碼問題
+        reader.onload = function(e) {
+            const buffer = e.target.result;
+            const view = new Uint8Array(buffer);
             
-            // 解析 CSV 並過濾掉標題列與空白行
-            const rows = data.split(/\r?\n/).filter(row => row.trim() !== '');
-            vocabulary = rows.slice(1).map(row => {
-                const cols = row.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-                return { en: cols[0], zh: cols[1], pos: cols[2] || "未標註" };
-            }).filter(item => item.en && item.zh);
+            // 簡單偵測是否為 UTF-8
+            let decoder = new TextDecoder('utf-8');
+            let content = decoder.decode(view);
+            
+            // 如果讀出來有亂碼感，嘗試用 Big5 (針對 Excel 存出的 CSV)
+            if (content.includes('')) {
+                decoder = new TextDecoder('big5');
+                content = decoder.decode(view);
+            }
+            
+            processData(content);
+        };
+        reader.readAsArrayBuffer(file);
+    });
 
-            if(vocabulary.length === 0) throw new Error("無有效數據");
+    function processData(csvText) {
+        const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+        
+        // 解析並跳過第一列標題
+        vocabulary = lines.slice(1).map(line => {
+            const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            return { en: cols[0], zh: cols[1], pos: cols[2] || "未標註" };
+        }).filter(item => item.en && item.zh);
 
-            document.getElementById('loading').style.display = 'none';
+        if (vocabulary.length > 0) {
+            document.getElementById('setup-area').style.display = 'none';
             document.getElementById('quiz-area').style.display = 'block';
             nextQuestion();
-        } catch (e) {
-            document.getElementById('loading').innerHTML = "❌ 讀取失敗<br><small>請確認試算表已發佈且網路通暢</small>";
+        } else {
+            alert("檔案似乎是空的或格式不對，請確認是否有單字在裡面。");
         }
     }
 
@@ -83,9 +110,8 @@
         document.getElementById('target-word').innerText = currentQuiz.en;
         document.getElementById('pos-display').innerText = currentQuiz.pos;
 
-        // 生成選項 (1正確 + 3隨機)
         let options = [currentQuiz.zh];
-        while(options.length < 4) {
+        while(options.length < 4 && options.length < vocabulary.length) {
             let r = vocabulary[Math.floor(Math.random() * vocabulary.length)].zh;
             if(!options.includes(r)) options.push(r);
         }
@@ -104,21 +130,31 @@
     function check(selectedBtn, selectedText) {
         const btns = document.querySelectorAll('#options-box button');
         btns.forEach(b => b.disabled = true);
-        
-        // 顯示詞性
         document.getElementById('pos-display').style.visibility = 'visible';
         
         const isCorrect = selectedText === currentQuiz.zh;
-        const logId = isCorrect ? 'correct-log' : 'error-log';
-        const countId = isCorrect ? 'ok-count' : 'err-count';
-        
         if(isCorrect) {
             selectedBtn.classList.add('correct');
-            scores.ok++;
+            addLog('correct-log', currentQuiz, '#2ecc71');
         } else {
             selectedBtn.classList.add('wrong');
-            scores.err++;
             btns.forEach(b => { if(b.innerText === currentQuiz.zh) b.classList.add('correct'); });
+            addLog('error-log', currentQuiz, '#e74c3c');
         }
+        document.getElementById('next-btn').style.display = 'block';
+    }
 
-        document.getElementById(countId).innerText =
+    function addLog(targetId, word, color) {
+        const logBox = document.getElementById(targetId);
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.style.borderLeftColor = color;
+        item.innerHTML = `<strong>${word.en}</strong> <small>(${word.pos})</small><br>${word.zh}`;
+        logBox.prepend(item);
+    }
+
+    document.getElementById('next-btn').onclick = nextQuestion;
+</script>
+
+</body>
+</html>
