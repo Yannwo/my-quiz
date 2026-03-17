@@ -3,119 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOEIC vorcabulary</title>
+    <title>TOEIC 1218 挑戰系統</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
+            --bg-color: #0f0f0f;
+            --card-bg: #1a1a1a;
             --text-main: #e0e0e0;
-            --accent-blue: #bb86fc; 
-            --correct-green: #03dac6;
-            --wrong-red: #cf6679;
+            --accent: #bb86fc; 
+            --correct: #03dac6;
+            --wrong: #cf6679;
             --border: #333;
         }
 
         body { 
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; 
-            max-width: 650px; margin: 0 auto; padding: 20px; 
+            max-width: 600px; margin: 0 auto; padding: 20px; 
             background-color: var(--bg-color); color: var(--text-main); 
         }
 
         .card { 
             background: var(--card-bg); padding: 30px; border-radius: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; 
-            border: 1px solid var(--border); margin-top: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6); text-align: center; 
+            border: 1px solid var(--border); margin-top: 10px;
         }
 
-        .word { font-size: 3em; font-weight: 800; color: var(--accent-blue); margin-bottom: 5px; min-height: 1.2em; }
+        .word { font-size: 3.2em; font-weight: 800; color: var(--accent); margin-bottom: 0px; letter-spacing: -1px; }
         
         .pos-badge { 
-            display: inline-block; padding: 5px 15px; background: #333; color: var(--accent-blue); 
-            border-radius: 20px; font-size: 0.9em; font-weight: bold; margin-bottom: 25px; 
-            visibility: hidden; border: 1px solid var(--accent-blue);
+            display: inline-block; padding: 4px 12px; background: #222; color: var(--accent); 
+            border-radius: 8px; font-size: 0.9em; font-weight: bold; margin-bottom: 30px; 
+            visibility: hidden; border: 1px solid var(--accent);
         }
 
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
         button { 
-            padding: 15px; font-size: 1.05em; cursor: pointer; border: 1px solid var(--border); 
-            border-radius: 12px; background: #2c2c2c; color: var(--text-main); 
-            transition: 0.2s; font-weight: 500;
+            padding: 16px; font-size: 1.05em; cursor: pointer; border: 1px solid var(--border); 
+            border-radius: 12px; background: #252525; color: var(--text-main); 
+            transition: 0.15s; font-weight: 500; outline: none;
         }
 
-        button:hover:not(:disabled) { background: #383838; border-color: var(--accent-blue); }
+        button:hover:not(:disabled) { background: #333; border-color: var(--accent); }
+        button:active { transform: scale(0.98); }
         
-        .correct { background: var(--correct-green) !important; color: #000 !important; font-weight: bold; }
-        .wrong { background: var(--wrong-red) !important; color: #000 !important; font-weight: bold; }
+        .correct-ans { background: var(--correct) !important; color: #000 !important; font-weight: bold; border-color: var(--correct) !important; }
+        .wrong-ans { background: var(--wrong) !important; color: #000 !important; font-weight: bold; border-color: var(--wrong) !important; }
 
         #next-btn { 
-            margin-top: 25px; width: 100%; background: var(--accent-blue); color: #000; 
+            margin-top: 25px; width: 100%; background: var(--accent); color: #000; 
             display: none; padding: 18px; border: none; border-radius: 12px; 
             font-weight: bold; font-size: 1.1em; cursor: pointer; 
         }
 
-        .history-section { margin-top: 30px; text-align: center; }
-        .toggle-btn { background: none; border: 1px solid var(--border); color: #888; padding: 8px 20px; border-radius: 5px; font-size: 0.8em; cursor: pointer; }
-        .reset-btn { background: none; border: 1px solid #444; color: #555; padding: 5px 10px; border-radius: 5px; font-size: 0.7em; margin-top: 10px; cursor: pointer; }
+        .info-row { margin-top: 20px; font-size: 0.8em; color: #666; display: flex; justify-content: space-between; }
         
-        .history-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .history-box { 
-            background: var(--card-bg); padding: 15px; border-radius: 12px; 
-            height: 300px; overflow-y: auto; border: 1px solid var(--border); text-align: left;
-        }
-
-        .log-item { padding: 8px; border-bottom: 1px solid var(--border); font-size: 0.85em; }
-        .progress-info { font-size: 0.85em; color: #888; margin-top: 20px; }
+        .history-area { margin-top: 20px; display: none; }
+        .log-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .log-box { background: #151515; padding: 10px; border-radius: 10px; height: 250px; overflow-y: auto; font-size: 0.8em; border: 1px solid #222; }
+        
+        .toggle-link { color: #555; text-decoration: underline; cursor: pointer; font-size: 0.8em; }
+        .btn-reset { color: #444; background: none; border: none; cursor: pointer; font-size: 0.8em; text-decoration: underline; margin-top: 20px;}
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="quiz-area">
-        <div id="loading">📡 正在從網路載入單字表...</div>
-        <div id="quiz-content" style="display:none;">
-            <div class="word" id="target-word"></div>
-            <div id="pos-display" class="pos-badge"></div>
-            <div class="options" id="options-box"></div>
-            <button id="next-btn">下一題</button>
-            <div class="progress-info" id="progress-text"></div>
+    <div id="loader">🛰️ 正在同步 1218 個單字...</div>
+    <div id="quiz-ui" style="display:none;">
+        <div class="word" id="target-word"></div>
+        <div id="pos-display" class="pos-badge"></div>
+        <div class="options" id="options-box"></div>
+        <button id="next-btn">下一題</button>
+        <div class="info-row">
+            <span id="progress-text">剩餘：--</span>
+            <span class="toggle-link" onclick="toggleHistory()">顯示/隱藏紀錄</span>
         </div>
     </div>
 </div>
 
-<div class="history-section">
-    <button class="toggle-btn" onclick="toggleHistory()">顯示/隱藏 學習紀錄</button>
-    <div id="history-grid" class="history-grid">
-        <div class="history-box">
-            <h3 style="color: var(--wrong-red); margin-top:0; font-size: 0.9em;">❌ 錯誤紀錄</h3>
-            <div id="error-log"></div>
-        </div>
-        <div class="history-box">
-            <h3 style="color: var(--correct-green); margin-top:0; font-size: 0.9em;">✅ 已掌握</h3>
-            <div id="correct-log"></div>
-        </div>
+<div id="history-area" class="history-area">
+    <div class="log-container">
+        <div class="log-box" id="error-log"><strong>❌ 錯誤紀錄</strong><br></div>
+        <div class="log-box" id="correct-log"><strong>✅ 已掌握</strong><br></div>
     </div>
-    <br>
-    <button class="reset-btn" onclick="resetProgress()">重置所有進度 (1218題重新開始)</button>
+    <center><button class="btn-reset" onclick="resetAll()">清除進度並重來</button></center>
 </div>
 
 <script>
-    const STORAGE_KEY = 'toeic_quiz_progress';
-    let masterPool = []; 
-    let currentPool = []; 
-    let currentQuiz = {};
+    const STORAGE_KEY = 'toeic_1218_mastered';
+    let masterData = []; 
+    let activePool = []; 
+    let currentItem = {};
 
-    async function fetchData() {
+    async function init() {
         try {
-            // 在 GitHub Pages 上，這會讀取同倉庫下的 VocabularyList.csv
-            const response = await fetch('VocabularyList.csv');
-            if (!response.ok) throw new Error('找不到 VocabularyList.csv，請確認檔案已上傳至 GitHub');
+            // 從 GitHub 倉庫獲取檔案 (GitHub Pages 環境下)
+            const res = await fetch('VocabularyList.csv');
+            if (!res.ok) throw new Error('找不到檔案');
             
-            const arrayBuffer = await response.arrayBuffer();
-            // 先嘗試 UTF-8，如果有問題可改為 big5
-            const decoder = new TextDecoder('utf-8');
-            const content = decoder.decode(arrayBuffer);
+            const buffer = await res.arrayBuffer();
+            // 自動偵測：先嘗試 UTF-8 (GitHub 預設)，若有問題可能需要手動調至 Big5
+            const content = new TextDecoder('utf-8').decode(buffer);
             
             parseCSV(content);
-        } catch (err) {
-            document.getElementById
+        } catch (e) {
+            document.getElementById('loader').innerText = '❌ 檔案載入失敗，請確認 VocabularyList.csv 已上傳。';
+        }
+    }
+
+    function parseCSV(text) {
+        const rows = text.split(/\r?\n/).filter(r => r.trim() && r.includes(','));
+        // 跳過標題列
+        masterData = rows.slice(1).map(r => {
+            const cells = r.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            return { en: cells[0], zh: cells[1], pos: cells[2] || "" };
+        }).filter(item => item.en && item.zh);
+
+        syncStorage();
+        showUI();
+    }
+
+    function syncStorage() {
+        const mastered = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        activePool = masterData.filter(m => !mastered.includes(m.en));
+        
+        // 把舊的已掌握單字補進 Log (僅顯示最後 20 個)
+        const log = document.getElementById('correct-log');
+        mastered.slice(-20).forEach(en => {
+            const item = masterData.find(m => m.en === en);
+            if(item) log.innerHTML += `<div>${item.en}</div>`;
+        });
+    }
+
+    function showUI() {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('quiz-ui').style.display = 'block';
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        if (activePool.length === 0) {
+            document.getElementById('target-word').innerText = "🏆 全數完成！";
+            document.getElementById('options-box').innerHTML = "";
+            return;
+        }
+
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('pos-display').style.visibility = 'hidden';
+        document.getElementById('progress-text').innerText = `剩餘：${activePool.length} / 總數：${masterData.length}`;
+
+        currentItem = activePool[Math.floor(Math.random() * activePool.length)];
+        document.getElementById('target-word').innerText = currentItem.en;
+        document.getElementById('pos-display').innerText = currentItem.pos;
+
+        // 產生選項
+        let opts = [currentItem.zh];
+        while(opts.length < 4) {
+            let r = masterData[Math.floor(Math.random() * masterData.length)].zh;
+            if(!opts.includes(r)) opts.push(r);
+        }
+        opts.sort(() => Math.random() - 0.5);
+
+        const box = document.getElementById('options-box');
+        box.innerHTML = '';
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.innerText = o;
+            b.onclick = () => handleCheck(b, o);
+            box.appendChild(b);
+        });
+    }
+
+    function handleCheck(btn, val) {
+        const btns = document.querySelectorAll('#options-box button');
+        btns.forEach(b => b.disabled = true);
+        document.getElementById('pos-display').style.visibility = 'visible';
+
+        if (val === currentItem.zh) {
+            btn.classList.add('correct-ans');
+            updateLog('correct-log', currentItem.en);
+            // 移除已掌握
+            activePool = activePool.filter(i => i.en !== currentItem.en);
+            save();
+        } else {
+            btn.classList.add('wrong-ans');
+            btns.forEach(b => { if(b.innerText === currentItem.zh) b.classList.add('correct-ans'); });
+            updateLog('error-log', `${currentItem.en} (${currentItem.zh})`);
+        }
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function save() {
+        const mastered = masterData.filter(m => !activePool.find(a => a.en === m.en)).map(m => m.en);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mastered));
+    }
+
+    function updateLog(id, txt) {
+        const el = document.getElementById(id);
+        const div = document.createElement('div');
+        div.style.borderBottom = "1px solid #222";
+        div.style.padding = "4px 0";
+        div.innerText = txt;
+        el.insertBefore(div, el.firstChild.nextSibling);
+    }
+
+    function toggleHistory() {
+        const h = document.getElementById('history-area');
+        h.style.display = h.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function resetAll() {
+        if(confirm('確定要清除所有 1218 題的進度嗎？')) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    document.getElementById('next-btn').onclick = renderQuestion;
+    init();
+</script>
+
+</body>
+</html>
