@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CRAM TOEIC // Terminal_Grammar</title>
+    <title>CRAM TOEIC // Grammar_Lab_Ultimate</title>
     <style>
         :root { 
             --bg-color: #1e1e1e; --card-bg: #252526; --text-main: #d4d4d4; 
@@ -16,80 +16,95 @@
             color: var(--text-main); user-select: none;
         }
 
-        /* Nav & Decoration */
+        /* Nav */
         .menu-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; cursor: pointer; z-index: 100; }
         .menu-btn div { width: 25px; height: 3px; background-color: var(--text-main); margin: 5px 0; border-radius: 2px; }
         .side-nav { position: fixed; top: 0; left: -250px; width: 220px; height: 100%; background-color: var(--nav-bg); transition: 0.3s; z-index: 99; padding-top: 60px; border-right: 1px solid var(--border); }
         .side-nav.open { left: 0; }
         .nav-item { padding: 15px 25px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid #444; text-decoration: none; display: block; font-size: 0.85em; }
 
-        .sys-header { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--comment); margin-bottom: 4px; letter-spacing: 1px; }
-        .top-line { height: 1px; background: linear-gradient(90deg, var(--comment) 30%, transparent); margin-bottom: 25px; }
+        .sys-header { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--comment); margin-bottom: 4px; }
+        .top-line { height: 1px; background: linear-gradient(90deg, var(--comment) 30%, transparent); margin-bottom: 20px; }
 
         /* Card */
-        .card { background: var(--card-bg); padding: 35px 25px; border-radius: 4px; border: 1px solid var(--border); text-align: center; box-shadow: 0 15px 45px rgba(0,0,0,0.6); position: relative; }
-        .word { font-size: clamp(1.6rem, 6vw, 2.4rem); font-weight: bold; color: var(--accent); margin-bottom: 25px; display: block; line-height: 1.2; }
-        
-        .section-tag { font-size: 0.75rem; color: #569cd6; margin: 25px 0 10px 0; text-align: left; padding-left: 10px; border-left: 2px solid #569cd6; font-weight: bold; }
+        .card { background: var(--card-bg); padding: 30px 25px; border-radius: 4px; border: 1px solid var(--border); text-align: center; box-shadow: 0 15px 45px rgba(0,0,0,0.6); }
+        .word { font-size: clamp(1.6rem, 6vw, 2.4rem); font-weight: bold; color: var(--accent); margin-bottom: 20px; display: block; }
+        .section-tag { font-size: 0.75rem; color: #569cd6; margin: 20px 0 10px 0; text-align: left; padding-left: 10px; border-left: 2px solid #569cd6; font-weight: bold; }
 
         /* Options */
-        .options-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 20px; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 15px; }
         button.opt-btn { 
-            width: 100%; padding: 15px; border: 1px solid var(--border); 
+            width: 100%; padding: 14px; border: 1px solid var(--border); 
             border-radius: 4px; background: #2d2d2d; color: var(--text-main); 
-            text-align: left; cursor: pointer; font-size: 0.95rem; 
-            transition: 0.2s; font-family: inherit;
+            text-align: left; cursor: pointer; font-size: 0.9rem; transition: 0.2s; font-family: inherit;
         }
         button.opt-btn.selected { border-color: var(--accent); background: #3e3e42; color: var(--accent); }
-        .correct-ans { border-color: var(--correct) !important; color: var(--correct) !important; background: rgba(181, 206, 168, 0.1) !important; font-weight: bold; }
+        .correct-ans { border-color: var(--correct) !important; color: var(--correct) !important; background: rgba(181, 206, 168, 0.1) !important; }
         .wrong-ans { border-color: var(--wrong) !important; color: var(--wrong) !important; background: rgba(244, 71, 71, 0.1) !important; }
 
         /* Actions */
-        .action-btn { width: 100%; padding: 18px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.95rem; margin-top: 10px; font-family: 'Consolas', monospace; }
+        .action-btn { width: 100%; padding: 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: 'Consolas', monospace; margin-top: 10px; }
         #submit-btn { background: var(--accent); color: #1e1e1e; }
         #next-btn { background: var(--comment); color: white; display: none; }
 
-        /* Progress Bar */
-        .progress-box { margin-top: 30px; text-align: left; }
-        .progress-info { font-size: 0.65rem; color: var(--comment); margin-bottom: 6px; display: flex; justify-content: space-between; }
-        .bar-bg { height: 2px; background: #333; }
-        #bar-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.4s ease-out; }
+        /* Progress & Log */
+        .progress-box { margin-top: 25px; }
+        .bar-bg { height: 2px; background: #333; margin: 8px 0; }
+        #bar-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.4s; }
+        
+        .log-container { margin-top: 20px; background: #1a1a1a; border: 1px solid var(--border); border-radius: 4px; padding: 10px; text-align: left; height: 120px; overflow-y: auto; font-size: 0.75rem; color: #888; }
+        .log-entry { margin-bottom: 4px; font-family: 'Consolas', monospace; }
+        .log-correct { color: var(--correct); }
+        .log-wrong { color: var(--wrong); }
+
+        .control-panel { margin-top: 15px; display: flex; gap: 10px; }
+        .ctrl-btn { flex: 1; background: none; border: 1px solid #444; color: #666; font-size: 0.7rem; padding: 5px; cursor: pointer; border-radius: 3px; }
+        .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
     </style>
 </head>
 <body onclick="closeNav()">
 
     <button class="menu-btn" onclick="event.stopPropagation(); toggleNav()"><div></div><div></div><div></div></button>
     <nav id="sideNav" class="side-nav" onclick="event.stopPropagation()">
-        <a href="index.html" class="nav-item">/ HOME_STATION</a>
-        <a href="en_to_zh.html" class="nav-item">/ VOCABULARY_TEST</a>
-        <a href="grammar_test.html" class="nav-item" style="color:var(--accent)">/ GRAMMAR_LAB_V1.5</a>
+        <a href="index.html" class="nav-item">> RETURN_HOME</a>
+        <a href="en_to_zh.html" class="nav-item">> VOCAB_MODE</a>
+        <a href="grammar_test.html" class="nav-item" style="color:var(--accent)">> GRAMMAR_MODE</a>
     </nav>
 
     <div class="sys-header">
-        <span>EN_GRAMMAR_MODULE // REV_2026</span>
-        <span>STATUS: ACTIVE_LINK</span>
+        <span>GRAMMAR_LAB // SESSION_ACTIVE</span>
+        <span>VER: 1.8.4</span>
     </div>
     <div class="top-line"></div>
 
     <div class="card">
-        <span class="word" id="target-word">SCANNING_DATABASE...</span>
+        <span class="word" id="target-word">LOADING...</span>
 
-        <div class="section-tag">01_IDENTIFY_PART_OF_SPEECH</div>
+        <div class="section-tag">01_PART_OF_SPEECH</div>
         <div id="pos-options" class="options-grid"></div>
 
-        <div class="section-tag">02_TRANSLATION_RETRIEVAL</div>
+        <div class="section-tag">02_TRANSLATION</div>
         <div id="zh-options" class="options-grid"></div>
 
-        <button id="submit-btn" class="action-btn" onclick="checkAnswers()">EXECUTE_VERIFICATION()</button>
-        <button id="next-btn" class="action-btn" onclick="initQuestion()">LOAD_NEXT_SECTOR()</button>
+        <button id="submit-btn" class="action-btn" onclick="checkAnswers()">VERIFY_SELECTION()</button>
+        <button id="next-btn" class="action-btn" onclick="initQuestion()">NEXT_SEQUENCE()</button>
 
         <div class="progress-box">
-            <div class="progress-info">
-                <span>QUEUE_PROGRESS</span>
+            <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--comment);">
+                <span>DB_PROGRESS</span>
                 <span id="progress-text">0 / 0</span>
             </div>
             <div class="bar-bg"><div id="bar-fill"></div></div>
         </div>
+    </div>
+
+    <div class="log-container" id="session-log">
+        <div class="log-entry">-- SYSTEM READY. AWAITING INPUT --</div>
+    </div>
+
+    <div class="control-panel">
+        <button class="ctrl-btn" onclick="resetDatabase()">[ RESET_RECORDS ]</button>
+        <button class="ctrl-btn" onclick="clearLog()">[ CLEAR_LOG ]</button>
     </div>
 
     <script>
@@ -108,23 +123,21 @@
                     return { en: c[0], zh: c[1], pos: c[2] || "n/a", filter: c[3] || "0" };
                 }).filter(i => i.en && i.filter === "1"); 
 
-                // 動態獲取 CSV 中出現過的所有詞性
                 allPOS = [...new Set(masterData.map(i => i.pos))].sort();
-                
                 activePool = [...masterData];
                 initialCount = activePool.length;
+                addLog("DATABASE LOADED. TOTAL: " + initialCount);
                 initQuestion();
-            } catch (e) { document.getElementById('target-word').innerText = 'ERROR: CSV_NOT_FOUND'; }
+            } catch (e) { addLog("CRITICAL: CSV NOT FOUND", true); }
         }
 
         function initQuestion() {
             if(!activePool.length) { 
-                document.getElementById('target-word').innerText = "SUCCESS: ALL_CLEARED"; 
-                document.getElementById('submit-btn').style.display = 'none';
-                updateProgress();
+                document.getElementById('target-word').innerText = "COMPLETE"; 
+                addLog("CONGRATULATIONS: ALL TASKS FINISHED.");
                 return; 
             }
-            currentItem = activePool[Math.floor(Math.random() * activePool.length)];
+            currentItem = activePool[0]; // 順序出題或隨機可視情況調整，這裡採池子首位
             document.getElementById('target-word').innerText = currentItem.en;
             
             selectedPOS = null; selectedZH = null;
@@ -136,24 +149,15 @@
             updateProgress();
         }
 
-        function updateProgress() {
-            const finished = initialCount - activePool.length;
-            const percent = (finished / initialCount) * 100;
-            document.getElementById('bar-fill').style.width = percent + '%';
-            document.getElementById('progress-text').innerText = `${finished} / ${initialCount}`;
-        }
-
         function renderPOS() {
             const box = document.getElementById('pos-options');
             box.innerHTML = '';
-            // 隨機抽取目前單字的正確詞性 + 2個隨機詞性，確保每次都有正確答案且不重複
             let options = [currentItem.pos];
-            let otherPOS = allPOS.filter(p => p !== currentItem.pos);
+            let others = allPOS.filter(p => p !== currentItem.pos);
             while(options.length < Math.min(allPOS.length, 3)) {
-                let r = otherPOS[Math.floor(Math.random()*otherPOS.length)];
+                let r = others[Math.floor(Math.random()*others.length)];
                 if(!options.includes(r)) options.push(r);
             }
-            
             options.sort().forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = 'opt-btn pos-opt';
@@ -194,6 +198,7 @@
             if(!selectedPOS || !selectedZH) return;
             let isCorrect = true;
 
+            // 詞性判定
             document.querySelectorAll('.pos-opt').forEach(btn => {
                 btn.disabled = true;
                 if(btn.dataset.val === currentItem.pos) btn.classList.add('correct-ans');
@@ -203,6 +208,7 @@
                 }
             });
 
+            // 中文判定
             document.querySelectorAll('.zh-opt').forEach(btn => {
                 btn.disabled = true;
                 if(btn.dataset.en === currentItem.en) btn.classList.add('correct-ans');
@@ -212,13 +218,53 @@
                 }
             });
 
-            if(isCorrect) activePool = activePool.filter(i => i.en !== currentItem.en);
+            if(isCorrect) {
+                addLog(`PASSED: ${currentItem.en}`, false, true);
+                activePool.shift(); // 移除首位（已答對）
+            } else {
+                addLog(`FAILED: ${currentItem.en}`, true);
+                // 答錯：移到池子最後面，晚點再出現
+                let failedItem = activePool.shift();
+                activePool.push(failedItem);
+            }
+
             document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('next-btn').style.display = 'block';
         }
 
+        function updateProgress() {
+            const finished = initialCount - activePool.length;
+            const percent = (finished / initialCount) * 100;
+            document.getElementById('bar-fill').style.width = percent + '%';
+            document.getElementById('progress-text').innerText = `${finished} / ${initialCount}`;
+        }
+
+        function addLog(msg, isError = false, isSuccess = false) {
+            const log = document.getElementById('session-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            if(isError) entry.classList.add('log-wrong');
+            if(isSuccess) entry.classList.add('log-correct');
+            const now = new Date();
+            const timeStr = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}] `;
+            entry.innerText = timeStr + msg;
+            log.prepend(entry); // 最新的在上面
+        }
+
+        function resetDatabase() {
+            if(confirm("REBOOT SYSTEM? ALL PROGRESS WILL BE LOST.")) {
+                init();
+                addLog("SYSTEM REBOOTED. PROGRESS RESET.");
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('session-log').innerHTML = '<div class="log-entry">-- LOG WIPED --</div>';
+        }
+
         function toggleNav() { document.getElementById('sideNav').classList.toggle('open'); }
         function closeNav() { document.getElementById('sideNav').classList.remove('open'); }
+        
         init();
     </script>
 </body>
