@@ -40,7 +40,7 @@
         <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
             你是我的眼ಠ_ಠ
         </h1>
-        <p class="text-xs text-slate-400 mt-1">預設前鏡頭，調整縮放並將物件置於中央方框內</p>
+        <p class="text-xs text-slate-400 mt-1">調整縮放並將物件置於中央方框內</p>
     </header>
 
     <main class="w-full max-w-md mx-auto flex flex-col items-center flex-grow justify-center gap-3">
@@ -85,7 +85,7 @@
                 </div>
                 <div>
                     <h3 class="font-semibold text-slate-200">準備啟用相機</h3>
-                    <p class="text-xs text-slate-400 mt-1">預設將開啟前鏡頭，請點擊下方按鈕</p>
+                    <p class="text-xs text-slate-400 mt-1">預設將開啟後鏡頭，請點擊下方按鈕</p>
                 </div>
                 <button id="startCameraBtn" class="mt-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-semibold text-sm shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center gap-2">
                     <i class="fa-solid fa-power-off"></i> 開啟相機
@@ -176,7 +176,7 @@
         const toastMessage = document.getElementById('toastMessage');
 
         let stream = null;
-        let useFrontCamera = true; // 預設使用前鏡頭
+        let useFrontCamera = false; // 預設使用前鏡頭
         let isFrozen = false;
         let trackCapabilities = null;
 
@@ -200,7 +200,7 @@
 
                 const constraints = {
                     video: {
-                        facingMode: currentFacingMode ? 'user' : 'environment',
+                        facingMode: useFrontCamera ? 'user' : 'environment',
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
                     },
