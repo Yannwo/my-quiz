@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tabata 定時器</title>
   <style>
     * {
@@ -19,27 +19,28 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 20px;
+      min-height: 100dvh;
+      padding: 15px;
     }
     .container {
       background-color: #1e1e1e;
       border-radius: 20px;
-      padding: 30px;
+      padding: 20px;
       width: 100%;
       max-width: 450px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       text-align: center;
     }
     h1 {
-      margin-bottom: 20px;
-      font-size: 1.8rem;
+      margin-bottom: 15px;
+      font-size: 1.5rem;
       color: #00e676;
     }
     .settings {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 25px;
+      gap: 12px;
+      margin-bottom: 20px;
       text-align: left;
     }
     .input-group {
@@ -47,51 +48,53 @@
       flex-direction: column;
     }
     .input-group label {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #aaa;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
     .input-group input {
       background: #2a2a2a;
       border: 1px solid #444;
       border-radius: 8px;
       color: #fff;
-      padding: 10px;
-      font-size: 1rem;
+      padding: 12px 10px;
+      font-size: 1.1rem;
       text-align: center;
+      width: 100%;
     }
     .timer-display {
-      margin: 20px 0;
-      padding: 20px;
+      margin: 15px 0;
+      padding: 15px;
       border-radius: 15px;
       background-color: #2a2a2a;
       transition: background-color 0.3s ease;
     }
     .status {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       font-weight: bold;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       letter-spacing: 2px;
     }
     .time {
-      font-size: 4.5rem;
+      font-size: 3.8rem;
       font-weight: bold;
       font-family: monospace;
+      line-height: 1.1;
     }
     .rounds {
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: #bbb;
-      margin-top: 5px;
+      margin-top: 8px;
     }
     .controls {
       display: flex;
-      gap: 15px;
+      gap: 12px;
     }
     button {
       flex: 1;
-      padding: 15px;
+      padding: 16px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 1.1rem;
       font-weight: bold;
       cursor: pointer;
@@ -129,19 +132,19 @@
   <div class="settings">
     <div class="input-group">
       <label for="warmup">暖身時間 (分鐘)</label>
-      <input type="number" id="warmup" value="3" min="0" step="0.5">
+      <input type="number" id="warmup" value="3" min="0" step="0.5" inputmode="decimal">
     </div>
     <div class="input-group">
       <label for="cycles">循環次數 (組)</label>
-      <input type="number" id="cycles" value="8" min="1">
+      <input type="number" id="cycles" value="8" min="1" inputmode="numeric">
     </div>
     <div class="input-group">
       <label for="work">衝刺時間 (秒)</label>
-      <input type="number" id="work" value="20" min="1">
+      <input type="number" id="work" value="20" min="1" inputmode="numeric">
     </div>
     <div class="input-group">
       <label for="rest">休息時間 (秒)</label>
-      <input type="number" id="rest" value="10" min="0">
+      <input type="number" id="rest" value="10" min="0" inputmode="numeric">
     </div>
   </div>
 
@@ -163,9 +166,7 @@
   let timer = null;
   let isRunning = false;
   
-  // 狀態管理：'idle', 'warmup', 'work', 'rest', 'completed'
   let currentState = 'idle';
-  
   let warmupTime = 0;
   let workTime = 0;
   let restTime = 0;
@@ -174,15 +175,14 @@
   let currentCycle = 1;
   let timeLeft = 0;
 
-  // 語音合成 API (Text-to-Speech)
   const synth = window.speechSynthesis;
 
   function speak(text) {
     if (!synth) return;
-    synth.cancel(); // 停止先前的聲音，防止聲音延遲重疊
+    synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'zh-TW';
-    utterance.rate = 1.2; // 稍微加快語速以精準對齊秒數
+    utterance.rate = 1.2;
     synth.speak(utterance);
   }
 
@@ -237,7 +237,6 @@
   }
 
   function startTimer() {
-    // 讀取輸入值（暖身時間改為分鐘換算成秒數）
     const warmupMinutes = parseFloat(document.getElementById('warmup').value) || 0;
     warmupTime = Math.round(warmupMinutes * 60);
     
@@ -296,7 +295,6 @@
   }
 
   function tick() {
-    // 倒數 10 秒人聲語音提示
     if (timeLeft <= 10 && timeLeft >= 1) {
       speak(timeLeft.toString());
     }
@@ -348,7 +346,6 @@
     updateDisplay();
   }
 
-  // 初始化顯示
   updateDisplay();
 </script>
 
