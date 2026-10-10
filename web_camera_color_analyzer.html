@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>網頁版相機顏色分析器</title>
+    <title>網頁版相機顏色分析器 (含縮放控制)</title>
     <!-- 引入 Tailwind CSS 進行現代化 UI 設計 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 FontAwesome 圖標 -->
@@ -25,34 +25,38 @@
         .animate-pulse-slow {
             animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        /* 自訂美化拉霸 (Range Slider) */
+        input[type=range] {
+            accent-color: #10b981;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4 sm:p-6">
 
-    <header class="w-full max-w-md mx-auto text-center py-2 mb-2">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400 mb-2 shadow-inner">
+    <header class="w-full max-w-md mx-auto text-center py-2 mb-1">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400 mb-1.5 shadow-inner">
             <i class="fa-solid fa-circle-dot animate-pulse"></i> 視訊鏡頭顏色辨識中
         </div>
         <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
             智慧顏色分析器
         </h1>
-        <p class="text-xs text-slate-400 mt-1">將欲辨識的物件置於中央方框內進行分析</p>
+        <p class="text-xs text-slate-400 mt-1">調整縮放並將物件置於中央方框內</p>
     </header>
 
-    <main class="w-full max-w-md mx-auto flex flex-col items-center flex-grow justify-center gap-4">
+    <main class="w-full max-w-md mx-auto flex flex-col items-center flex-grow justify-center gap-3">
         
         <!-- 相機觀景窗容器 -->
-        <div class="relative w-full aspect-[3/4] max-h-[50vh] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
+        <div class="relative w-full aspect-[3/4] max-h-[46vh] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
             
             <!-- 視訊串流畫面 -->
-            <video id="video" autoplay playsinline muted class="w-full h-full object-cover mirror-mode"></video>
+            <video id="video" autoplay playsinline muted class="w-full h-full object-cover mirror-mode transition-transform duration-100"></video>
             
             <!-- 隱藏的 Canvas 用於擷取畫面像素 -->
             <canvas id="canvas" class="hidden"></canvas>
 
             <!-- 中央對焦取樣框 -->
             <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div class="relative w-36 h-36 border-2 border-dashed border-emerald-400/80 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)] bg-emerald-500/5 backdrop-blur-[2px]">
+                <div class="relative w-32 h-32 border-2 border-dashed border-emerald-400/80 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)] bg-emerald-500/5 backdrop-blur-[2px]">
                     <div class="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></div>
                     <!-- 四角落裝飾 -->
                     <div class="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-emerald-400"></div>
@@ -62,15 +66,20 @@
                 </div>
             </div>
 
-            <!-- 相機控制捷徑浮動按鈕 (切換鏡頭 / 閃光燈模擬等) -->
-            <div class="absolute top-4 right-4 flex gap-2">
+            <!-- 相機控制捷徑浮動按鈕 (切換鏡頭) -->
+            <div class="absolute top-4 right-4 flex gap-2 z-10">
                 <button id="switchCameraBtn" title="切換前後鏡頭" class="w-10 h-10 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700/60 flex items-center justify-center text-slate-200 hover:bg-slate-800 transition shadow-lg active:scale-95">
                     <i class="fa-solid fa-camera-rotate text-sm"></i>
                 </button>
             </div>
 
+            <!-- 當前縮放倍率浮動標籤 -->
+            <div class="absolute top-4 left-4 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-[11px] font-mono text-emerald-400 shadow-lg z-10">
+                縮放: <span id="zoomLabel">1.0x</span>
+            </div>
+
             <!-- 相機未開啟時的提示層 -->
-            <div id="cameraPlaceholder" class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center gap-3 p-6 text-center z-10">
+            <div id="cameraPlaceholder" class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center gap-3 p-6 text-center z-20">
                 <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-2xl shadow-inner">
                     <i class="fa-solid fa-video"></i>
                 </div>
@@ -84,34 +93,48 @@
             </div>
         </div>
 
+        <div class="w-full bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3 px-4 shadow-lg flex flex-col gap-1.5">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+                <span class="flex items-center gap-1.5 font-medium text-slate-300">
+                    <i class="fa-solid fa-magnifying-glass-plus text-emerald-400"></i> 畫面縮放控制
+                </span>
+                <span id="zoomValueText" class="font-mono text-emerald-400 font-semibold">1.0x</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] text-slate-500 font-mono">1x</span>
+                <input id="zoomSlider" type="range" min="1" max="5" step="0.1" value="1" disabled class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer disabled:opacity-40">
+                <span class="text-[10px] text-slate-500 font-mono">5x</span>
+            </div>
+        </div>
+
         <!-- 拍攝與分析控制按鈕 -->
         <div class="w-full flex items-center justify-center gap-3">
-            <button id="captureBtn" disabled class="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-base shadow-xl shadow-emerald-500/20 transition active:scale-95 flex items-center justify-center gap-2">
+            <button id="captureBtn" disabled class="flex-1 py-3 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-sm shadow-xl shadow-emerald-500/20 transition active:scale-95 flex items-center justify-center gap-2">
                 <i class="fa-solid fa-camera"></i> 拍攝並分析顏色
             </button>
-            <button id="toggleFreezeBtn" disabled title="暫停/繼續畫面" class="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 flex items-center justify-center transition active:scale-95 shadow-md">
+            <button id="toggleFreezeBtn" disabled title="暫停/繼續畫面" class="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 flex items-center justify-center transition active:scale-95 shadow-md flex-shrink-0">
                 <i class="fa-solid fa-pause text-sm" id="freezeIcon"></i>
             </button>
         </div>
 
         <div id="resultCard" class="w-full bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-4 shadow-xl transition-all duration-300">
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">分析結果</span>
                 <span id="timestamp" class="text-[10px] text-slate-500">尚未檢測</span>
             </div>
 
             <div class="flex items-center gap-4">
                 <!-- 色塊預覽 -->
-                <div id="colorPreviewBox" class="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-slate-700/60 shadow-inner flex-shrink-0 flex items-center justify-center transition-colors duration-300">
+                <div id="colorPreviewBox" class="w-15 h-15 w-16 h-16 rounded-2xl bg-slate-800 border-2 border-slate-700/60 shadow-inner flex-shrink-0 flex items-center justify-center transition-colors duration-300">
                     <i class="fa-solid fa-palette text-slate-600 text-xl" id="paletteIcon"></i>
                 </div>
 
                 <!-- 顏色名稱與細節 -->
                 <div class="flex-grow">
-                    <div id="colorName" class="text-xl font-bold text-slate-100 tracking-tight">等待檢測中...</div>
-                    <div class="flex items-center gap-3 mt-1.5 text-xs text-slate-400 font-mono">
-                        <span id="rgbValue" class="bg-slate-950/60 px-2 py-1 rounded-lg border border-slate-800">RGB: (---, ---, ---)</span>
-                        <span id="hexValue" class="bg-slate-950/60 px-2 py-1 rounded-lg border border-slate-800">HEX: #------</span>
+                    <div id="colorName" class="text-lg font-bold text-slate-100 tracking-tight">等待檢測中...</div>
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-400 font-mono">
+                        <span id="rgbValue" class="bg-slate-950/60 px-2 py-0.5 rounded-lg border border-slate-800">RGB: (---, ---, ---)</span>
+                        <span id="hexValue" class="bg-slate-950/60 px-2 py-0.5 rounded-lg border border-slate-800">HEX: #------</span>
                     </div>
                 </div>
             </div>
@@ -119,8 +142,8 @@
 
     </main>
 
-    <footer class="w-full max-w-md mx-auto text-center pt-2 text-[11px] text-slate-500">
-        Web Camera Color Analyzer &bull; HTML5 & Tailwind CSS
+    <footer class="w-full max-w-md mx-auto text-center pt-1 text-[11px] text-slate-500">
+        Web Camera Color Analyzer &bull; Zoom Control
     </footer>
 
     <!-- 自訂提示訊息框 (替代 alert) -->
@@ -139,6 +162,10 @@
         const switchCameraBtn = document.getElementById('switchCameraBtn');
         const cameraPlaceholder = document.getElementById('cameraPlaceholder');
         
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomLabel = document.getElementById('zoomLabel');
+        const zoomValueText = document.getElementById('zoomValueText');
+
         const colorPreviewBox = document.getElementById('colorPreviewBox');
         const paletteIcon = document.getElementById('paletteIcon');
         const colorNameEl = document.getElementById('colorName');
@@ -151,6 +178,7 @@
         let stream = null;
         let useFrontCamera = true;
         let isFrozen = false;
+        let trackCapabilities = null;
 
         // 顯示提示訊息函式 (取代 alert)
         function showToast(message) {
@@ -182,10 +210,29 @@
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 
-                // 隱藏預設佔位提示
+                // 檢查硬體相機是否支援原生 Zoom Track Capabilities
+                const track = stream.getVideoTracks()[0];
+                trackCapabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+                if (trackCapabilities.zoom) {
+                    zoomSlider.min = trackCapabilities.zoom.min;
+                    zoomSlider.max = trackCapabilities.zoom.max;
+                    zoomSlider.step = trackCapabilities.zoom.step || 0.1;
+                    zoomSlider.value = track.getSettings().zoom || trackCapabilities.zoom.min;
+                    updateZoomDisplay(zoomSlider.value);
+                } else {
+                    // 若硬體不支援原生 zoom，改用 CSS transform scale 模擬放大
+                    zoomSlider.min = 1;
+                    zoomSlider.max = 4;
+                    zoomSlider.step = 0.1;
+                    zoomSlider.value = 1;
+                    updateZoomDisplay(1);
+                }
+
                 cameraPlaceholder.classList.add('hidden');
                 captureBtn.disabled = false;
                 toggleFreezeBtn.disabled = false;
+                zoomSlider.disabled = false;
                 
                 showToast('相機已成功啟動');
             } catch (err) {
@@ -194,14 +241,40 @@
             }
         }
 
+        // 更新縮放倍率顯示與套用
+        async function applyZoom(zoomVal) {
+            const val = parseFloat(zoomVal);
+            updateZoomDisplay(val);
+
+            if (stream) {
+                const track = stream.getVideoTracks()[0];
+                if (trackCapabilities && trackCapabilities.zoom) {
+                    try {
+                        await track.applyConstraints({ advanced: [{ zoom: val }] });
+                        return;
+                    } catch (e) {
+                        console.warn('原生硬體縮放套用失敗，轉為 CSS 縮放模式', e);
+                    }
+                }
+            }
+
+            // 若無原生硬體縮放支援，使用 CSS 樣式進行畫面放大
+            video.style.transform = `${useFrontCamera ? 'scaleX(-1)' : ''} scale(${val})`;
+        }
+
+        function updateZoomDisplay(val) {
+            const formatted = Number(val).toFixed(1) + 'x';
+            zoomLabel.textContent = formatted;
+            zoomValueText.textContent = formatted;
+        }
+
         // 轉換 RGB 為 HEX
         function rgbToHex(r, g, b) {
             return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
         }
 
-        // 智慧色彩辨識邏輯 (基於 RGB 區間與色調判斷)
+        // 智慧色彩辨識邏輯
         function identifyColor(r, g, b) {
-            // 灰階與黑白判斷
             const max = Math.max(r, g, b);
             const min = Math.min(r, g, b);
             const diff = max - min;
@@ -215,7 +288,6 @@
                 return "灰色";
             }
 
-            // 主要色系辨識
             if (r > g && r > b) {
                 if (g > 180 && r > 220) return "淺黃色";
                 if (g > 120 && g < 200) return "橘色 / 黃色";
@@ -234,7 +306,6 @@
                 return "藍色調";
             }
 
-            // 複合色與暖色/冷色細調
             if (r > 180 && g > 150 && b < 100) return "金黃色 / 棕黃";
             if (r > 120 && g < 90 && b < 80) return "棕色 / 咖啡色";
 
@@ -243,7 +314,7 @@
 
         // 分析畫面中央取樣框區域
         function analyzeColor() {
-            if (!video.srcObject || video.paused) {
+            if (!video.srcObject || (video.paused && !isFrozen)) {
                 showToast('請先確保相機正在運行');
                 return;
             }
@@ -260,10 +331,9 @@
             canvas.height = videoHeight;
             const ctx = canvas.getContext('2d');
 
-            // 若為前鏡頭且有套用鏡像，確保抓取正確像素
             ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
 
-            // 定義取樣框在影片中的尺寸與位置 (對應畫面中央正方形 120x120 像素)
+            // 抓取中央 25% 區域進行像素採樣
             const sampleSize = Math.floor(Math.min(videoWidth, videoHeight) * 0.25);
             const startX = Math.floor((videoWidth - sampleSize) / 2);
             const startY = Math.floor((videoHeight - sampleSize) / 2);
@@ -286,9 +356,8 @@
                 const avgB = Math.round(totalB / pixelCount);
 
                 const hex = rgbToHex(avgR, avgG, avgB);
-                const colorTitle = identifyClientColor(avgR, avgG, avgB);
+                const colorTitle = identifyColor(avgR, avgG, avgB);
 
-                // 更新 UI 顯示
                 colorPreviewBox.style.backgroundColor = hex;
                 paletteIcon.style.display = 'none';
                 colorNameEl.textContent = colorTitle;
@@ -305,11 +374,6 @@
             }
         }
 
-        // 更精細的色彩判定輔助
-        function identifyClientColor(r, g, b) {
-            return identifyColor(r, g, b);
-        }
-
         // 事件監聽綁定
         startCameraBtn.addEventListener('click', startCamera);
         
@@ -317,49 +381,45 @@
             analyzeColor();
         });
 
-        // 點擊視訊畫面也可以直接觸發分析
         video.addEventListener('click', () => {
             if (!captureBtn.disabled) {
                 analyzeColor();
             }
         });
 
-        // 切換前後鏡頭
+        zoomSlider.addEventListener('input', (e) => {
+            applyZoom(e.target.value);
+        });
+
         switchCameraBtn.addEventListener('click', () => {
             useFrontCamera = !useFrontCamera;
             
-            // 如果是前鏡頭，預覽套用鏡像翻轉；後鏡頭則取消鏡像
+            const currentZoom = zoomSlider.value;
             if (useFrontCamera) {
                 video.classList.add('mirror-mode');
             } else {
                 video.classList.remove('mirror-mode');
             }
             
-            startCamera();
+            startCamera().then(() => {
+                zoomSlider.value = currentZoom;
+                applyZoom(currentZoom);
+            });
         });
 
-        // 暫停 / 播放畫面預覽
         toggleFreezeBtn.addEventListener('click', () => {
             if (!isFrozen) {
                 video.pause();
                 isFrozen = true;
                 freezeIcon.classList.remove('fa-pause');
                 freezeIcon.classList.add('fa-play');
-                showToast('畫面已暫停，您可以仔細觀察');
+                showToast('畫面已暫停');
             } else {
                 video.play();
                 isFrozen = false;
                 freezeIcon.classList.remove('fa-play');
                 freezeIcon.classList.add('fa-pause');
                 showToast('已恢復即時預覽');
-            }
-        });
-
-        // 頁面載入後自動嘗試啟動相機（部分瀏覽器可能需要使用者點擊）
-        window.addEventListener('load', () => {
-            // 預先檢查相機支援性
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                showToast('您的瀏覽器不支援相機存取功能');
             }
         });
     </script>
