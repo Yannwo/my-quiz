@@ -14,7 +14,7 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* 前鏡頭預設鏡像反轉 */
+        /* 鏡像反轉（用於前鏡頭自拍時比較自然） */
         .mirror-mode {
             transform: scaleX(-1);
         }
@@ -48,8 +48,8 @@
         <!-- 相機觀景窗容器 -->
         <div class="relative w-full aspect-[3/4] max-h-[46vh] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
             
-            <!-- 視訊串流畫面 (預設套用前鏡頭鏡像) -->
-            <video id="video" autoplay playsinline muted class="w-full h-full object-cover mirror-mode transition-transform duration-100"></video>
+            <!-- 視訊串流畫面 (預設不加 mirror-mode，後續由 JS 根據前後鏡頭動態控制) -->
+            <video id="video" autoplay playsinline muted class="w-full h-full object-cover transition-transform duration-100"></video>
             
             <!-- 隱藏的 Canvas 用於擷取畫面像素 -->
             <canvas id="canvas" class="hidden"></canvas>
@@ -85,7 +85,7 @@
                 </div>
                 <div>
                     <h3 class="font-semibold text-slate-200">準備啟用相機</h3>
-                    <p class="text-xs text-slate-400 mt-1">預設將開啟後鏡頭，請點擊下方按鈕</p>
+                    <p class="text-xs text-slate-400 mt-1">請點擊下方按鈕啟動相機</p>
                 </div>
                 <button id="startCameraBtn" class="mt-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-semibold text-sm shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center gap-2">
                     <i class="fa-solid fa-power-off"></i> 開啟相機
@@ -143,7 +143,7 @@
     </main>
 
     <footer class="w-full max-w-md mx-auto text-center pt-1 text-[11px] text-slate-500">
-        Web Camera Color Analyzer &bull; Front Camera Default
+        Web Camera Color Analyzer &bull; Smart Mirror Direction
     </footer>
 
     <!-- 自訂提示訊息框 (替代 alert) -->
@@ -176,11 +176,10 @@
         const toastMessage = document.getElementById('toastMessage');
 
         let stream = null;
-        let useFrontCamera = false; // 預設使用前鏡頭
+        let useFrontCamera = true; // true 代表前鏡頭，false 代表後鏡頭
         let isFrozen = false;
         let trackCapabilities = null;
 
-        // 顯示提示訊息函式 (取代 alert)
         function showToast(message) {
             toastMessage.textContent = message;
             toast.classList.remove('opacity-0', 'pointer-events-none');
@@ -191,7 +190,6 @@
             }, 3000);
         }
 
-        // 啟動相機 (預設前鏡頭 facingMode: "user")
         async function startCamera() {
             try {
                 if (stream) {
@@ -210,7 +208,13 @@
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 
-                // 檢查相機硬體是否支援原生 Zoom 變焦能力
+                // 動態處理鏡像方向：如果是前鏡頭加 mirror-mode，後鏡頭則移除
+                if (useFrontCamera) {
+                    video.classList.add('mirror-mode');
+                } else {
+                    video.classList.remove('mirror-mode');
+                }
+
                 const track = stream.getVideoTracks()[0];
                 trackCapabilities = track.getCapabilities ? track.getCapabilities() : {};
 
@@ -221,7 +225,6 @@
                     zoomSlider.value = track.getSettings().zoom || trackCapabilities.zoom.min;
                     updateZoomDisplay(zoomSlider.value);
                 } else {
-                    // 若無硬體變焦，使用 CSS 模擬放大 (1x 至 5x)
                     zoomSlider.min = 1;
                     zoomSlider.max = 5;
                     zoomSlider.step = 0.1;
@@ -241,7 +244,6 @@
             }
         }
 
-        // 套用縮放倍率
         async function applyZoom(zoomVal) {
             const val = parseFloat(zoomVal);
             updateZoomDisplay(val);
@@ -258,7 +260,6 @@
                 }
             }
 
-            // 使用 CSS scale 進行畫面放大
             video.style.transform = `${useFrontCamera ? 'scaleX(-1)' : ''} scale(${val})`;
         }
 
@@ -268,12 +269,10 @@
             zoomValueText.textContent = formatted;
         }
 
-        // 轉換 RGB 為 HEX
         function rgbToHex(r, g, b) {
             return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
         }
 
-        // 智慧色彩辨識邏輯
         function identifyColor(r, g, b) {
             const max = Math.max(r, g, b);
             const min = Math.min(r, g, b);
@@ -312,7 +311,6 @@
             return "綜合混合色";
         }
 
-        // 分析畫面中央取樣框區域
         function analyzeColor() {
             if (!video.srcObject || (video.paused && !isFrozen)) {
                 showToast('請先確保相機正在運行');
@@ -333,7 +331,6 @@
 
             ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
 
-            // 抓取中央 25% 區域進行像素採樣
             const sampleSize = Math.floor(Math.min(videoWidth, videoHeight) * 0.25);
             const startX = Math.floor((videoWidth - sampleSize) / 2);
             const startY = Math.floor((videoHeight - sampleSize) / 2);
@@ -374,7 +371,6 @@
             }
         }
 
-        // 事件監聽綁定
         startCameraBtn.addEventListener('click', startCamera);
         
         captureBtn.addEventListener('click', () => {
@@ -393,13 +389,7 @@
 
         switchCameraBtn.addEventListener('click', () => {
             useFrontCamera = !useFrontCamera;
-            
             const currentZoom = zoomSlider.value;
-            if (useFrontCamera) {
-                video.classList.add('mirror-mode');
-            } else {
-                video.classList.remove('mirror-mode');
-            }
             
             startCamera().then(() => {
                 zoomSlider.value = currentZoom;
