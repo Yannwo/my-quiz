@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>你是我的眼</title>
+    <title>你是我的眼ಠ_ಠ</title>
     <!-- 引入 Tailwind CSS 進行現代化 UI 設計 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 FontAwesome 圖標 -->
@@ -14,7 +14,7 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* 自訂動畫與鏡像反轉 */
+        /* 前鏡頭預設鏡像反轉 */
         .mirror-mode {
             transform: scaleX(-1);
         }
@@ -38,9 +38,9 @@
             <i class="fa-solid fa-circle-dot animate-pulse"></i> 視訊鏡頭顏色辨識中
         </div>
         <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-            智慧顏色分析器
+            你是我的眼ಠ_ಠ
         </h1>
-        <p class="text-xs text-slate-400 mt-1">調整縮放並將物件置於中央方框內</p>
+        <p class="text-xs text-slate-400 mt-1">預設前鏡頭，調整縮放並將物件置於中央方框內</p>
     </header>
 
     <main class="w-full max-w-md mx-auto flex flex-col items-center flex-grow justify-center gap-3">
@@ -48,7 +48,7 @@
         <!-- 相機觀景窗容器 -->
         <div class="relative w-full aspect-[3/4] max-h-[46vh] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
             
-            <!-- 視訊串流畫面 -->
+            <!-- 視訊串流畫面 (預設套用前鏡頭鏡像) -->
             <video id="video" autoplay playsinline muted class="w-full h-full object-cover mirror-mode transition-transform duration-100"></video>
             
             <!-- 隱藏的 Canvas 用於擷取畫面像素 -->
@@ -85,7 +85,7 @@
                 </div>
                 <div>
                     <h3 class="font-semibold text-slate-200">準備啟用相機</h3>
-                    <p class="text-xs text-slate-400 mt-1">請點擊下方按鈕允許瀏覽器存取相機權限</p>
+                    <p class="text-xs text-slate-400 mt-1">預設將開啟前鏡頭，請點擊下方按鈕</p>
                 </div>
                 <button id="startCameraBtn" class="mt-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-semibold text-sm shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center gap-2">
                     <i class="fa-solid fa-power-off"></i> 開啟相機
@@ -125,7 +125,7 @@
 
             <div class="flex items-center gap-4">
                 <!-- 色塊預覽 -->
-                <div id="colorPreviewBox" class="w-15 h-15 w-16 h-16 rounded-2xl bg-slate-800 border-2 border-slate-700/60 shadow-inner flex-shrink-0 flex items-center justify-center transition-colors duration-300">
+                <div id="colorPreviewBox" class="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-slate-700/60 shadow-inner flex-shrink-0 flex items-center justify-center transition-colors duration-300">
                     <i class="fa-solid fa-palette text-slate-600 text-xl" id="paletteIcon"></i>
                 </div>
 
@@ -143,7 +143,7 @@
     </main>
 
     <footer class="w-full max-w-md mx-auto text-center pt-1 text-[11px] text-slate-500">
-        Web Camera Color Analyzer &bull; Zoom Control
+        Web Camera Color Analyzer &bull; Front Camera Default
     </footer>
 
     <!-- 自訂提示訊息框 (替代 alert) -->
@@ -176,7 +176,7 @@
         const toastMessage = document.getElementById('toastMessage');
 
         let stream = null;
-        let useFrontCamera = true;
+        let useFrontCamera = true; // 預設使用前鏡頭
         let isFrozen = false;
         let trackCapabilities = null;
 
@@ -191,7 +191,7 @@
             }, 3000);
         }
 
-        // 啟動相機
+        // 啟動相機 (預設前鏡頭 facingMode: "user")
         async function startCamera() {
             try {
                 if (stream) {
@@ -210,7 +210,7 @@
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 
-                // 檢查硬體相機是否支援原生 Zoom Track Capabilities
+                // 檢查相機硬體是否支援原生 Zoom 變焦能力
                 const track = stream.getVideoTracks()[0];
                 trackCapabilities = track.getCapabilities ? track.getCapabilities() : {};
 
@@ -221,9 +221,9 @@
                     zoomSlider.value = track.getSettings().zoom || trackCapabilities.zoom.min;
                     updateZoomDisplay(zoomSlider.value);
                 } else {
-                    // 若硬體不支援原生 zoom，改用 CSS transform scale 模擬放大
+                    // 若無硬體變焦，使用 CSS 模擬放大 (1x 至 5x)
                     zoomSlider.min = 1;
-                    zoomSlider.max = 4;
+                    zoomSlider.max = 5;
                     zoomSlider.step = 0.1;
                     zoomSlider.value = 1;
                     updateZoomDisplay(1);
@@ -234,14 +234,14 @@
                 toggleFreezeBtn.disabled = false;
                 zoomSlider.disabled = false;
                 
-                showToast('相機已成功啟動');
+                showToast(useFrontCamera ? '已成功啟動前鏡頭' : '已成功啟動後鏡頭');
             } catch (err) {
                 console.error('無法啟動相機:', err);
                 showToast('無法存取相機，請檢查瀏覽器權限設定');
             }
         }
 
-        // 更新縮放倍率顯示與套用
+        // 套用縮放倍率
         async function applyZoom(zoomVal) {
             const val = parseFloat(zoomVal);
             updateZoomDisplay(val);
@@ -253,12 +253,12 @@
                         await track.applyConstraints({ advanced: [{ zoom: val }] });
                         return;
                     } catch (e) {
-                        console.warn('原生硬體縮放套用失敗，轉為 CSS 縮放模式', e);
+                        console.warn('硬體變焦套用失敗，轉為 CSS 縮放模式', e);
                     }
                 }
             }
 
-            // 若無原生硬體縮放支援，使用 CSS 樣式進行畫面放大
+            // 使用 CSS scale 進行畫面放大
             video.style.transform = `${useFrontCamera ? 'scaleX(-1)' : ''} scale(${val})`;
         }
 
