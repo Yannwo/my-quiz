@@ -1345,6 +1345,241 @@
             ]
           }
         ]
+      },
+      {
+        id: 'ch-time-signatures-bars',
+        number: '第六章',
+        title: '拍子記號、小節與小節線（對應樂理初階 PDF）',
+        subtitle: '徹底搞懂 2/4、3/4、4/4、6/8 等拍號意義，單拍子 vs 複拍子，以及小節線種類與強弱拍',
+        icon: 'timer',
+        intro: '拍子記號告訴我們「一個小節有幾拍」以及「用什麼音符當一拍」。小節線像教室的牆，把音符清楚分組，並標示強拍位置。',
+        entries: [
+          {
+            id: 'hb-time-sig-meaning',
+            badge: '拍子記號核心',
+            title: '拍子記號（Time Signature）怎麼讀？',
+            summary: '上面數字 = 每小節有幾拍；下面數字 = 以幾分音符當一拍。例如 3/4 代表「每小節 3 拍，四分音符為一拍」。',
+            visualCue: 'C = 4/4（普通拍）｜ ¢ = 2/2（Alla breve）。初學者常誤以為「四分音符永遠是 1 拍」，其實完全取決於拍子記號！',
+            details: [
+              '<strong>常見拍號對照：</strong><br/>• 2/4：二拍子，四分音符為一拍（進行曲常見）<br/>• 3/4：三拍子，四分音符為一拍（圓舞曲）<br/>• 4/4：四拍子，四分音符為一拍（最常見）<br/>• 6/8：複二拍子，八分音符為一拍（或感覺成每小節兩大拍）',
+              '<strong>單拍子 vs 複拍子：</strong>單拍子（Simple）每拍可分成 2 份；複拍子（Compound）每拍可分成 3 份。6/8、9/8、12/8 屬於複拍子。',
+              '<strong>練習提示：</strong>看到拍號先默念「幾拍、什麼當一拍」，再開始數拍。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '3/4',
+              events: [
+                { keys: ['C4'], duration: 'q' },
+                { keys: ['E4'], duration: 'q' },
+                { keys: ['G4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽 3/4 拍強-弱-弱：C4 - E4 - G4',
+            demoSequence: [
+              { keys: ['C4'], beats: 1.0 },
+              { keys: ['E4'], beats: 1.0 },
+              { keys: ['G4'], beats: 1.0 }
+            ]
+          },
+          {
+            id: 'hb-barlines-types',
+            badge: '小節線種類',
+            title: '小節、小節線與弱起拍（Anacrusis）',
+            summary: '小節像「班房」，小節線像「牆」。單小節線分隔每個小節；複縱線表示段落結束；終止線（一細一粗）表示全曲結束。',
+            visualCue: '單小節線｜複縱線｜終止線（一細一粗）。生日快樂歌就是典型的弱起拍例子。',
+            details: [
+              '<strong>強弱拍規律：</strong><br/>• 二拍子：強 - 弱<br/>• 三拍子：強 - 弱 - 弱<br/>• 四拍子：強 - 弱 - 次強 - 弱',
+              '<strong>弱起拍（Anacrusis）：</strong>樂曲不一定從第一拍開始，可從弱拍進入（如上拍）。生日歌「祝你生日快樂」就是經典弱起拍。',
+              '<strong>為什麼需要小節？</strong>有了小節，演奏者可以快速定位「第幾小節第幾拍」，不用從頭數音符。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['G4'], duration: 'q' },
+                { keys: ['A4'], duration: 'q' },
+                { keys: ['B4'], duration: 'q' },
+                { keys: ['C5'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽四拍子強弱：G4(強) - A4(弱) - B4(次強) - C5(弱)',
+            demoSequence: [
+              { keys: ['G4'], beats: 1.0 },
+              { keys: ['A4'], beats: 1.0 },
+              { keys: ['B4'], beats: 1.0 },
+              { keys: ['C5'], beats: 1.0 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ch-dynamics-tempo',
+        number: '第七章',
+        title: '音量、速度與演奏指示（對應樂理初階 PDF）',
+        subtitle: '從 ppp 到 fff、cresc./dim.、常用速度術語與 ABRSM Grade 1–2 必背術語',
+        icon: 'volume-2',
+        intro: '音樂不只是音高與節奏，音量強弱與速度變化才是情感的關鍵。樂譜上的意大利文術語與符號，就是作曲家給演奏者的「情緒劇本」。',
+        entries: [
+          {
+            id: 'hb-dynamics',
+            badge: '音量記號',
+            title: '音量（Dynamics）：從最弱到最強',
+            summary: 'ppp（最弱）→ pp → p → mp → mf → f → ff → fff（最強）。crescendo 漸強，diminuendo / decrescendo 漸弱。',
+            visualCue: 'cresc. 或 < 符號 = 漸強｜ dim. 或 > 符號 = 漸弱。音量變化是表達音樂情緒最直接的方式。',
+            details: [
+              '<strong>基本音量對照：</strong><br/>• ppp / pp：極弱、很弱<br/>• p：弱（piano）<br/>• mp：中弱（mezzo piano）<br/>• mf：中強（mezzo forte）<br/>• f：強（forte）<br/>• ff / fff：很強、極強',
+              '<strong>漸變記號：</strong>crescendo（cresc.）逐漸變強；diminuendo（dim.）或 decrescendo 逐漸變弱。',
+              '<strong>注意：</strong>音量是相對的，不是絕對分貝。同一個 f 在小房間與大音樂廳的實際音量不同。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4'], duration: 'h' },
+                { keys: ['G4'], duration: 'h' }
+              ]
+            },
+            demoLabel: '試聽強弱對比：C4（較弱）→ G4（較強）',
+            demoSequence: [
+              { keys: ['C4'], beats: 1.5 },
+              { keys: ['G4'], beats: 1.5 }
+            ]
+          },
+          {
+            id: 'hb-tempo-terms',
+            badge: '速度與術語',
+            title: '常用速度術語與 Grade 1–2 必背詞彙',
+            summary: '速度由樂譜左上角指示決定，與拍子時值無關。Largo（慢）→ Andante（行板）→ Moderato（中板）→ Allegro（快）→ Presto（急）。',
+            visualCue: 'rit. / rall. = 漸慢｜ accel. = 漸快｜ a tempo = 回復原速。拍子機數字代表每分鐘拍數（bpm）。',
+            details: [
+              '<strong>常用速度對照（約略 bpm）：</strong><br/>• Largo / Lento：慢板（40–60）<br/>• Adagio：柔板（66–76）<br/>• Andante：行板（76–108）<br/>• Moderato：中板（108–120）<br/>• Allegro：快板（120–168）<br/>• Presto：急板（168–200）',
+              '<strong>變化術語：</strong>ritardando（rit.）/ rallentando（rall.）漸慢；accelerando（accel.）漸快；a tempo 回復原速。',
+              '<strong>Grade 1 必背：</strong>a tempo、accelerando、adagio、allegro、andante、crescendo、diminuendo、forte、piano、legato、staccato、moderato 等。',
+              '<strong>Grade 2 延伸：</strong>con moto、espressivo、grazioso、largo、lento、molto、poco a poco、vivace 等。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['E4'], duration: 'q' },
+                { keys: ['G4'], duration: 'q' },
+                { keys: ['C5'], duration: 'h' }
+              ]
+            },
+            demoLabel: '試聽中速樂句：E4 - G4 - C5',
+            demoSequence: [
+              { keys: ['E4'], beats: 0.9 },
+              { keys: ['G4'], beats: 0.9 },
+              { keys: ['C5'], beats: 1.5 }
+            ]
+          },
+          {
+            id: 'hb-performance-marks',
+            badge: '演奏記號',
+            title: '常見演奏指示與符號（ABRSM 初級必備）',
+            summary: '圓滑線（slur）、延音線（tie）、斷奏（staccato）、重音（accent）、延長號（fermata）、反覆記號等，是把樂譜變成音樂的關鍵。',
+            visualCue: '點在符頭上方/下方 = 斷奏｜弧線連接不同音 = 圓滑線｜弧線連接相同音 = 延音線｜帽子符號 = 延長。',
+            details: [
+              '<strong>重要符號：</strong><br/>• Slur（圓滑線）：連奏、圓滑<br/>• Tie（延音線）：同音相加時值<br/>• Staccato：斷奏、短促<br/>• Accent：強調該音<br/>• Fermata（延長號）：自由延長<br/>• Repeat marks：反覆記號',
+              '<strong>其他常見：</strong>tenuto（保持）、staccatissimo（極斷）、arpeggio（琶音由下往上快速彈開）、8va（高八度演奏）。',
+              '<strong>練習建議：</strong>看到這些記號先想「聲音要怎麼變化」，再動手彈。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4'], duration: 'q' },
+                { keys: ['E4'], duration: 'q' },
+                { keys: ['G4'], duration: 'q' },
+                { keys: ['C5'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽連奏感覺：C4 - E4 - G4 - C5',
+            demoSequence: [
+              { keys: ['C4'], beats: 0.8 },
+              { keys: ['E4'], beats: 0.8 },
+              { keys: ['G4'], beats: 0.8 },
+              { keys: ['C5'], beats: 1.0 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ch-scales-keys-advanced',
+        number: '第八章',
+        title: '半音全音、大小調與十二調號表（對應樂理初階 PDF）',
+        subtitle: '半音與全音的區別、大調小調結構、調號記憶法',
+        icon: 'music',
+        intro: '半音是鋼琴上相鄰最近的兩個鍵；全音等於兩個半音。大調與小調的聲音色彩不同，調號則是整首曲子的「升降預設設定」。',
+        entries: [
+          {
+            id: 'hb-semitone-tone',
+            badge: '音程基礎',
+            title: '半音（Semitone）與全音（Tone）',
+            summary: '半音 = 鋼琴上相鄰最近的兩個鍵（無論黑白）。全音 = 兩個半音的距離。大調音階結構是：全-全-半-全-全-全-半。',
+            visualCue: 'E–F 與 B–C 是自然半音（沒有黑鍵）；其他相鄰白鍵中間都有黑鍵，所以是全音。',
+            details: [
+              '<strong>半音例子：</strong>C–C♯、E–F、B–C、F♯–G。',
+              '<strong>全音例子：</strong>C–D、D–E、F–G、A–B。',
+              '<strong>大調音階公式：</strong>全全半 全全全半（W W H W W W H）。',
+              '<strong>自然小調公式：</strong>全半全 全半全全（W H W W H W W）。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4'], duration: '8' },
+                { keys: ['C#4'], duration: '8' },
+                { keys: ['D4'], duration: '8' },
+                { keys: ['E4'], duration: '8' }
+              ]
+            },
+            demoLabel: '試聽半音與全音：C4 - C♯4（半音）→ D4 - E4（全音）',
+            demoSequence: [
+              { keys: ['C4'], beats: 0.6 },
+              { keys: ['C#4'], beats: 0.6 },
+              { keys: ['D4'], beats: 0.6 },
+              { keys: ['E4'], beats: 0.8 }
+            ]
+          },
+          {
+            id: 'hb-key-signature-table',
+            badge: '調號總表',
+            title: '十二個調號記憶法與升降順序',
+            summary: '升記號順序：F♯ C♯ G♯ D♯ A♯ E♯ B♯（固定順序）。降記號順序剛好相反：B♭ E♭ A♭ D♭ G♭ C♭ F♭。',
+            visualCue: '升號調：從 C 大調開始，每加一個升號就往上五度（G、D、A、E、B、F♯、C♯）。降號調往下五度。',
+            details: [
+              '<strong>升號調：</strong><br/>• 1♯ = G 大調（F♯）<br/>• 2♯ = D 大調（F♯ C♯）<br/>• 3♯ = A 大調<br/>• 4♯ = E 大調<br/>• 5♯ = B 大調<br/>• 6♯ = F♯ 大調<br/>• 7♯ = C♯ 大調',
+              '<strong>降號調：</strong><br/>• 1♭ = F 大調（B♭）<br/>• 2♭ = B♭ 大調<br/>• 3♭ = E♭ 大調<br/>• 4♭ = A♭ 大調<br/>• 5♭ = D♭ 大調<br/>• 6♭ = G♭ 大調<br/>• 7♭ = C♭ 大調',
+              '<strong>記憶口訣：</strong>升號「Father Charles Goes Down And Ends Battle」；降號反過來「Battle Ends And Down Goes Charles Father」。',
+              '<strong>小調關係：</strong>每個大調都有對應的關係小調（主音往下小三度），調號相同。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'G',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['G4'], duration: 'q' },
+                { keys: ['A4'], duration: 'q' },
+                { keys: ['B4'], duration: 'q' },
+                { keys: ['C5'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽 G 大調音階片段（含 F♯）：G4 - A4 - B4 - C5',
+            demoSequence: [
+              { keys: ['G4'], beats: 0.7 },
+              { keys: ['A4'], beats: 0.7 },
+              { keys: ['B4'], beats: 0.7 },
+              { keys: ['C5'], beats: 1.0 }
+            ]
+          }
+        ]
       }
     ];
 
