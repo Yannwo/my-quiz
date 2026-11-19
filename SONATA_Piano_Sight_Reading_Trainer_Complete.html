@@ -1,0 +1,3866 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SONATA · 鋼琴視譜專業訓練系統 | Piano Sight-Reading Trainer</title>
+  
+  <!-- Google Fonts: Noto Sans TC, Inter, Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- VexFlow 4.2.2 Stable UMD Build -->
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          },
+          colors: {
+            cream: {
+              50: '#FAF8F5',
+              100: '#F3EFEA',
+              200: '#E7E0D6',
+              300: '#D6CBBF',
+            },
+            charcoal: {
+              900: '#1E2022',
+              800: '#2A2D30',
+              700: '#3D4145',
+              500: '#686D73',
+            },
+            amber: {
+              classic: '#C68B59',
+              dark: '#A86F40',
+              light: '#F6ECE3',
+            },
+            feedback: {
+              success: '#2E6F40',
+              successBg: '#EAF4EC',
+              error: '#B83A3A',
+              errorBg: '#FBEAEA',
+            }
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(30, 32, 34, 0.06)',
+            'card': '0 2px 12px rgba(30, 32, 34, 0.04)',
+            'piano-white': '0 4px 6px rgba(0,0,0,0.18), inset 0 -4px 0 #E5E0D8',
+            'piano-white-active': '0 1px 2px rgba(0,0,0,0.25), inset 0 -1px 0 #D5CFC7',
+            'piano-black': '0 5px 8px rgba(0,0,0,0.45), inset 0 -3px 2px rgba(255,255,255,0.15)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #FAF8F5;
+      color: #1E2022;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F3EFEA;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D6CBBF;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #C68B59;
+    }
+
+    /* Piano Keyboard Styling */
+    .piano-container {
+      position: relative;
+      display: flex;
+      height: 176px;
+      background: #1E2022;
+      padding: 10px 10px 12px 10px;
+      border-radius: 14px;
+      box-shadow: 0 12px 28px -6px rgba(30, 32, 34, 0.25);
+      overflow-x: auto;
+    }
+
+    @media (max-width: 640px) {
+      .piano-container {
+        height: 148px;
+        padding: 8px 6px 10px 6px;
+      }
+    }
+
+    .white-keys-row {
+      display: flex;
+      width: 100%;
+      min-width: 620px;
+      height: 100%;
+      position: relative;
+      gap: 3px;
+    }
+
+    .piano-key-white {
+      flex: 1;
+      height: 100%;
+      background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 88%, #EDE8E0 100%);
+      border-radius: 0 0 7px 7px;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding-bottom: 10px;
+      transition: transform 0.06s ease, background 0.1s ease, box-shadow 0.06s ease;
+      box-shadow: 0 4px 5px rgba(0, 0, 0, 0.22), inset 0 -4px 0 #DFD9CE;
+      z-index: 1;
+    }
+
+    .piano-key-white:hover {
+      background: linear-gradient(180deg, #FFFFFF 0%, #F5EFE6 100%);
+    }
+
+    .piano-key-white.active-press {
+      transform: translateY(3px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 -1px 0 #D5CFC7;
+      background: #EFE9DF;
+    }
+
+    .piano-key-white.state-target {
+      background: linear-gradient(180deg, #FFFDF9 0%, #F6ECE3 75%, #EAD2BC 100%);
+      box-shadow: 0 4px 8px rgba(198, 139, 89, 0.35), inset 0 -4px 0 #C68B59;
+    }
+
+    .piano-key-white.state-correct {
+      background: linear-gradient(180deg, #EAF4EC 0%, #BCE0C5 85%, #8CC49B 100%) !important;
+      box-shadow: 0 2px 6px rgba(46, 111, 64, 0.35), inset 0 -3px 0 #2E6F40 !important;
+    }
+
+    .piano-key-white.state-wrong {
+      background: linear-gradient(180deg, #FBEAEA 0%, #F2BDBD 85%, #E08B8B 100%) !important;
+      box-shadow: 0 2px 6px rgba(184, 58, 58, 0.35), inset 0 -3px 0 #B83A3A !important;
+    }
+
+    .piano-key-black {
+      position: absolute;
+      top: 0;
+      width: 4.1%;
+      height: 61%;
+      background: linear-gradient(180deg, #34373B 0%, #1E2022 85%, #121314 100%);
+      border-radius: 0 0 5px 5px;
+      z-index: 10;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding-bottom: 8px;
+      box-shadow: 0 5px 8px rgba(0, 0, 0, 0.45), inset 0 -3px 1px rgba(255, 255, 255, 0.14);
+      transition: transform 0.06s ease, background 0.1s ease;
+    }
+
+    .piano-key-black:hover {
+      background: linear-gradient(180deg, #42464B 0%, #26292C 100%);
+    }
+
+    .piano-key-black.active-press {
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .piano-key-black.state-target {
+      background: linear-gradient(180deg, #D99B66 0%, #A86F40 100%);
+      box-shadow: 0 4px 10px rgba(198, 139, 89, 0.55);
+    }
+
+    .piano-key-black.state-correct {
+      background: linear-gradient(180deg, #3D8B52 0%, #245832 100%) !important;
+    }
+
+    .piano-key-black.state-wrong {
+      background: linear-gradient(180deg, #D14949 0%, #962A2A 100%) !important;
+    }
+
+    /* VexFlow Responsive Container */
+    .vexflow-wrapper svg {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 280px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    @keyframes pulseBeat {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.85; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .beat-active {
+      animation: pulseBeat 0.18s ease-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 bg-cream-50/95 backdrop-blur-md border-b border-cream-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="app.navigate('curriculum')">
+          <div class="w-9 h-9 rounded-xl bg-charcoal-900 text-cream-50 flex items-center justify-center shadow-sm">
+            <i data-lucide="music" class="w-5 h-5 text-amber-classic"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-serif font-bold text-lg tracking-tight text-charcoal-900">SONATA</span>
+              <span class="hidden sm:inline-block text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-light text-amber-dark">Pro Studio</span>
+            </div>
+            <p class="text-[11px] text-charcoal-500 hidden sm:block">鋼琴視譜與聽覺訓練系統</p>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation Tabs -->
+        <nav class="hidden md:flex items-center space-x-1 bg-cream-100 p-1 rounded-xl border border-cream-200" id="desktop-nav">
+          <button data-route="curriculum" onclick="app.navigate('curriculum')" class="nav-btn px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5">
+            <i data-lucide="map" class="w-4 h-4"></i> 課程地圖
+          </button>
+          <button data-route="handbook" onclick="app.navigate('handbook')" class="nav-btn px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5">
+            <i data-lucide="library" class="w-4 h-4"></i> 樂理知識書
+          </button>
+          <button data-route="guided" onclick="app.navigate('guided')" class="nav-btn px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5">
+            <i data-lucide="book-open" class="w-4 h-4"></i> 互動範例
+          </button>
+          <button data-route="practice" onclick="app.navigate('practice')" class="nav-btn px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5">
+            <i data-lucide="piano" class="w-4 h-4"></i> 隨堂練習
+          </button>
+          <button data-route="exam" onclick="app.navigate('exam')" class="nav-btn px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5">
+            <i data-lucide="award" class="w-4 h-4"></i> 階段測驗
+          </button>
+          <button data-route="analytics" onclick="app.navigate('analytics')" class="nav-btn px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i> 學習分析
+          </button>
+        </nav>
+
+        <!-- Global Utility Actions -->
+        <div class="flex items-center gap-2">
+          <!-- Keyboard Shortcut Guide Button -->
+          <button onclick="app.toggleShortcutModal(true)" title="電腦鍵盤彈奏對照表" class="p-2 rounded-xl text-charcoal-700 hover:bg-cream-200/70 transition-colors flex items-center gap-1.5 text-xs font-medium">
+            <i data-lucide="keyboard" class="w-4 h-4"></i>
+            <span class="hidden lg:inline">鍵位說明</span>
+          </button>
+
+          <!-- Global Sound Toggle -->
+          <button id="global-sound-btn" onclick="app.toggleSound()" title="開啟/靜音鋼琴音效" class="p-2 rounded-xl bg-cream-100 border border-cream-200 text-charcoal-900 hover:border-amber-classic transition-colors flex items-center gap-1.5 text-xs font-medium">
+            <i data-lucide="volume-2" class="w-4 h-4 text-amber-dark" id="sound-icon"></i>
+            <span class="hidden sm:inline" id="sound-label">音效開啟</span>
+          </button>
+
+          <!-- Settings / Reset Menu -->
+          <div class="relative">
+            <button onclick="app.toggleSettingsMenu()" title="進度設定" class="p-2 rounded-xl text-charcoal-700 hover:bg-cream-200/70 transition-colors">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+            </button>
+            <div id="settings-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-soft border border-cream-200 py-2 z-50">
+              <div class="px-4 py-2 border-b border-cream-100">
+                <p class="text-xs font-semibold text-charcoal-900">學習進度管理</p>
+                <p class="text-[11px] text-charcoal-500">資料自動儲存於瀏覽器</p>
+              </div>
+              <button onclick="app.unlockAllLevels()" class="w-full text-left px-4 py-2.5 text-xs text-charcoal-800 hover:bg-cream-100 flex items-center gap-2">
+                <i data-lucide="unlock" class="w-3.5 h-3.5 text-amber-dark"></i> 一鍵解鎖全部關卡 (體驗)
+              </button>
+              <button onclick="app.confirmResetProgress()" class="w-full text-left px-4 py-2.5 text-xs text-feedback-error hover:bg-feedback-errorBg flex items-center gap-2">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 重置所有學習紀錄
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Bar -->
+      <div class="flex md:hidden overflow-x-auto py-2 gap-1.5 border-t border-cream-200/70 no-scrollbar" id="mobile-nav">
+        <button data-route="curriculum" onclick="app.navigate('curriculum')" class="nav-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium">課程地圖</button>
+        <button data-route="handbook" onclick="app.navigate('handbook')" class="nav-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium">樂理知識書</button>
+        <button data-route="guided" onclick="app.navigate('guided')" class="nav-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium">互動範例</button>
+        <button data-route="practice" onclick="app.navigate('practice')" class="nav-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium">隨堂練習</button>
+        <button data-route="exam" onclick="app.navigate('exam')" class="nav-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium">階段測驗</button>
+        <button data-route="analytics" onclick="app.navigate('analytics')" class="nav-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium">學習分析</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main id="app-root" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <!-- Dynamic Views Rendered Here -->
+  </main>
+
+  <!-- Persistent Bottom Interactive Piano Dock (Shown on Guided, Practice, Exam views) -->
+  <section id="piano-dock" class="hidden sticky bottom-0 z-30 bg-cream-50/95 backdrop-blur-md border-t border-cream-200 shadow-[0_-6px_24px_rgba(30,32,34,0.06)]">
+    <div class="max-w-5xl mx-auto px-3 sm:px-6 py-3">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-semibold text-charcoal-800 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-classic"></span>
+            互動鋼琴鍵盤 (C3 – C5)
+          </span>
+          <span id="last-played-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-cream-200 text-charcoal-800 font-mono font-medium">
+            待機中 · 點擊琴鍵或使用鍵盤彈奏
+          </span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs text-charcoal-700">
+            <input type="checkbox" id="toggle-key-labels" checked onchange="app.toggleKeyLabels(this.checked)" class="rounded accent-amber-classic w-3.5 h-3.5">
+            <span>顯示鍵位提示</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 25-Key Piano Keyboard (C3 to C5) -->
+      <div class="piano-container" id="piano-keyboard">
+        <!-- Rendered by PianoUI module -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Toast Notification Banner -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Custom Confirm Modal (No window.confirm used!) -->
+  <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-charcoal-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-cream-200 transform transition-all">
+      <div class="flex items-start gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-light text-amber-dark flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 id="confirm-title" class="text-base font-bold text-charcoal-900">確認操作</h3>
+          <p id="confirm-message" class="text-sm text-charcoal-600 mt-1.5 leading-relaxed">您確定要執行此操作嗎？</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2.5 mt-6">
+        <button id="confirm-cancel-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-charcoal-700 bg-cream-100 hover:bg-cream-200 transition-colors">取消</button>
+        <button id="confirm-ok-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-white bg-charcoal-900 hover:bg-charcoal-800 transition-colors">確定繼續</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Mapping Guide Modal -->
+  <div id="shortcut-modal" class="hidden fixed inset-0 z-50 bg-charcoal-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-cream-200">
+      <div class="flex items-center justify-between pb-3 border-b border-cream-200">
+        <div class="flex items-center gap-2">
+          <i data-lucide="keyboard" class="w-5 h-5 text-amber-dark"></i>
+          <h3 class="text-base font-bold text-charcoal-900">電腦鍵盤快捷彈奏對照表</h3>
+        </div>
+        <button onclick="app.toggleShortcutModal(false)" class="p-1.5 rounded-lg text-charcoal-500 hover:bg-cream-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="mt-4 space-y-4 text-sm text-charcoal-700">
+        <p class="text-xs text-charcoal-500">無需外接 MIDI 鍵盤，可直接使用電腦 QWERTY 鍵盤雙八度彈奏：</p>
+        <div class="bg-cream-50 p-4 rounded-xl border border-cream-200 space-y-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-dark">高八度 / 中央 C 區 (C4 – C5)</span>
+            <p class="text-xs text-charcoal-600 mt-1">白鍵：<code class="bg-white px-1.5 py-0.5 rounded border border-cream-300 font-mono">A S D F G H J K</code> 對應 <span class="font-semibold">C4 D4 E4 F4 G4 A4 B4 C5</span></p>
+            <p class="text-xs text-charcoal-600 mt-1">黑鍵：<code class="bg-white px-1.5 py-0.5 rounded border border-cream-300 font-mono">W E &nbsp; T Y U</code> 對應 <span class="font-semibold">C♯4 D♯4 F♯4 G♯4 A♯4</span></p>
+          </div>
+          <div class="pt-2 border-t border-cream-200">
+            <span class="text-xs font-bold uppercase tracking-wider text-charcoal-700">低八度 / 低音譜號區 (C3 – B3)</span>
+            <p class="text-xs text-charcoal-600 mt-1">白鍵：<code class="bg-white px-1.5 py-0.5 rounded border border-cream-300 font-mono">Z X C V B N M</code> 對應 <span class="font-semibold">C3 D3 E3 F3 G3 A3 B3</span></p>
+            <p class="text-xs text-charcoal-600 mt-1">黑鍵：<code class="bg-white px-1.5 py-0.5 rounded border border-cream-300 font-mono">1 2 &nbsp; 4 5 6</code> 對應 <span class="font-semibold">C♯3 D♯3 F♯3 G♯3 A♯3</span></p>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-charcoal-500 pt-1">
+          <span>提示：和弦題目可依序按下組成音或同時按住完成作答。</span>
+          <button onclick="app.toggleShortcutModal(false)" class="px-4 py-2 rounded-xl bg-charcoal-900 text-white font-medium hover:bg-charcoal-800">我知道了</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Script -->
+  <script>
+    /**
+     * ============================================================================
+     * 1. STRUCTURED CURRICULUM & QUESTION BANK MODULE (題庫與關卡資料結構)
+     * ============================================================================
+     */
+    const PIANO_KEYS = [
+      // Octave 3 (C3 - B3)
+      { note: 'C3', midi: 48, type: 'white', solfege: 'Do', zh: '低音 Do', kbd: 'Z', freq: 130.81 },
+      { note: 'C#3', midi: 49, type: 'black', solfege: 'Di', zh: '升 Do', kbd: '1', freq: 138.59, leftOffset: 4.9 },
+      { note: 'D3', midi: 50, type: 'white', solfege: 'Re', zh: '低音 Re', kbd: 'X', freq: 146.83 },
+      { note: 'D#3', midi: 51, type: 'black', solfege: 'Ri', zh: '升 Re', kbd: '2', freq: 155.56, leftOffset: 11.7 },
+      { note: 'E3', midi: 52, type: 'white', solfege: 'Mi', zh: '低音 Mi', kbd: 'C', freq: 164.81 },
+      { note: 'F3', midi: 53, type: 'white', solfege: 'Fa', zh: '低音 Fa', kbd: 'V', freq: 174.61 },
+      { note: 'F#3', midi: 54, type: 'black', solfege: 'Fi', zh: '升 Fa', kbd: '4', freq: 185.00, leftOffset: 25.0 },
+      { note: 'G3', midi: 55, type: 'white', solfege: 'Sol', zh: '低音 Sol', kbd: 'B', freq: 196.00 },
+      { note: 'G#3', midi: 56, type: 'black', solfege: 'Si', zh: '升 Sol', kbd: '5', freq: 207.65, leftOffset: 31.6 },
+      { note: 'A3', midi: 57, type: 'white', solfege: 'La', zh: '低音 La', kbd: 'N', freq: 220.00 },
+      { note: 'A#3', midi: 58, type: 'black', solfege: 'Li', zh: '升 La', kbd: '6', freq: 233.08, leftOffset: 38.3 },
+      { note: 'B3', midi: 59, type: 'white', solfege: 'Si', zh: '低音 Si', kbd: 'M', freq: 246.94 },
+
+      // Octave 4 (C4 - B4)
+      { note: 'C4', midi: 60, type: 'white', solfege: 'Do', zh: '中央 C', kbd: 'A', freq: 261.63 },
+      { note: 'C#4', midi: 61, type: 'black', solfege: 'Di', zh: '升 Do', kbd: 'W', freq: 277.18, leftOffset: 51.6 },
+      { note: 'D4', midi: 62, type: 'white', solfege: 'Re', zh: '中央 Re', kbd: 'S', freq: 293.66 },
+      { note: 'D#4', midi: 63, type: 'black', solfege: 'Ri', zh: '升 Re', kbd: 'E', freq: 311.13, leftOffset: 58.3 },
+      { note: 'E4', midi: 64, type: 'white', solfege: 'Mi', zh: '中央 Mi', kbd: 'D', freq: 329.63 },
+      { note: 'F4', midi: 65, type: 'white', solfege: 'Fa', zh: '中央 Fa', kbd: 'F', freq: 349.23 },
+      { note: 'F#4', midi: 66, type: 'black', solfege: 'Fi', zh: '升 Fa', kbd: 'T', freq: 369.99, leftOffset: 71.6 },
+      { note: 'G4', midi: 67, type: 'white', solfege: 'Sol', zh: '中央 Sol', kbd: 'G', freq: 392.00 },
+      { note: 'G#4', midi: 68, type: 'black', solfege: 'Si', zh: '升 Sol', kbd: 'Y', freq: 415.30, leftOffset: 78.3 },
+      { note: 'A4', midi: 69, type: 'white', solfege: 'La', zh: '標準 A', kbd: 'H', freq: 440.00 },
+      { note: 'A#4', midi: 70, type: 'black', solfege: 'Li', zh: '升 La', kbd: 'U', freq: 466.16, leftOffset: 85.0 },
+      { note: 'B4', midi: 71, type: 'white', solfege: 'Si', zh: '中央 Si', kbd: 'J', freq: 493.88 },
+
+      // Octave 5 (C5)
+      { note: 'C5', midi: 72, type: 'white', solfege: 'Do', zh: '高音 Do', kbd: 'K', freq: 523.25 },
+    ];
+
+    // Helper: Normalize enharmonic equivalents (e.g., Bb3 -> A#3, Db4 -> C#4)
+    const ENHARMONIC_MAP = {
+      'Bb3': 'A#3', 'Eb3': 'D#3', 'Ab3': 'G#3', 'Db3': 'C#3', 'Gb3': 'F#3',
+      'Bb4': 'A#4', 'Eb4': 'D#4', 'Ab4': 'G#4', 'Db4': 'C#4', 'Gb4': 'F#4',
+      'Fb4': 'E4',  'Cb4': 'B3',  'E#4': 'F4',  'B#3': 'C4'
+    };
+
+    function normalizePitch(pitch) {
+      return ENHARMONIC_MAP[pitch] || pitch;
+    }
+
+    function getKeyMeta(pitch) {
+      const norm = normalizePitch(pitch);
+      return PIANO_KEYS.find(k => k.note === norm) || PIANO_KEYS[12];
+    }
+
+    const CURRICULUM_DATA = [
+      {
+        level: 1,
+        code: 'LV.01',
+        title: '入門：中央 C 位置與基礎節奏',
+        subtitle: '高音/低音譜號認識 · 全音符/二分/四分音符 · C4–G4 / C3–G3 · 含小星星、歡樂頌流行範例',
+        badge: '啟蒙基石',
+        unlockThreshold: 0,
+        goals: [
+          '辨識高音譜號（G 譜號）下加一線的中央 C（C4）至第二線 G4',
+          '辨識低音譜號（F 譜號）第二間 C3 至第四線 F3/G3 位置',
+          '掌握全音符（4拍）、二分音符（2拍）、四分音符（1拍）時值',
+          '透過《小星星》《歡樂頌》等流行經典建立視譜信心'
+        ],
+        guidedExamples: [
+          {
+            id: 'g1-1',
+            title: '範例 1A：右手中央 C 五指上行',
+            clef: 'treble',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 76,
+            summary: '從下加一線的中央 C4 開始，依序使用右手 1 到 5 指上行。注意 C4 有一條短橫線（下加一線）穿過符頭。',
+            steps: [
+              { keys: ['C4'], duration: 'q', finger: '右手 1 指 (拇指)', count: '第 1 拍 (1)', theory: '下加一線為中央 C (C4)，是鋼琴視譜最重要的定位錨點。' },
+              { keys: ['D4'], duration: 'q', finger: '右手 2 指 (食指)', count: '第 2 拍 (2)', theory: '緊貼第一線下方的「下加一間」為 D4 (Re)。' },
+              { keys: ['E4'], duration: 'q', finger: '右手 3 指 (中指)', count: '第 3 拍 (3)', theory: '五線譜最底部的第一線為 E4 (Mi)。' },
+              { keys: ['F4'], duration: 'q', finger: '右手 4 指 (無名指)', count: '第 4 拍 (4)', theory: '第一線與第二線之間的第一間為 F4 (Fa)。' },
+              { keys: ['G4'], duration: 'w', finger: '右手 5 指 (小指)', count: '第 1-2-3-4 拍 (全音符)', theory: '高音譜號螺旋中心環繞的第二線即為 G4 (Sol)，全音符需按滿四拍。' }
+            ]
+          },
+          {
+            id: 'g1-2',
+            title: '範例 1B：左手低音譜號基礎定位',
+            clef: 'bass',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 72,
+            summary: '低音譜號兩點夾住的第四線為 F3，往下推算第二間即為低音 C3。',
+            steps: [
+              { keys: ['C3'], duration: 'h', finger: '左手 5 指 (小指)', count: '第 1-2 拍 (二分音符)', theory: '低音譜號第二間為 C3，空心符頭加符桿代表 2 拍。' },
+              { keys: ['E3'], duration: 'h', finger: '左手 3 指 (中指)', count: '第 3-4 拍 (二分音符)', theory: '第三間為 E3 (Mi)，與 C3 隔開一間形成三度。' },
+              { keys: ['G3'], duration: 'q', finger: '左手 1 指 (拇指)', count: '第 1 拍', theory: '第四間為 G3 (Sol)，位於低音譜號 F 線上方一間。' },
+              { keys: ['F3'], duration: 'q', finger: '左手 2 指 (食指)', count: '第 2 拍', theory: '低音譜號冒號夾住的第四線就是 F3 (Fa)。' },
+              { keys: ['C3'], duration: 'h', finger: '左手 5 指 (小指)', count: '第 3-4 拍', theory: '回到主音 C3 結束樂句，建立穩定調性感。' }
+            ]
+          },
+          {
+            id: 'g1-3',
+            title: '流行範例：小星星（Twinkle Twinkle Little Star）前半',
+            clef: 'treble',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 80,
+            summary: '經典童謠《小星星》開頭樂句，全部使用中央 C 區白鍵，練習級進與重複音的視譜感覺。這是全球最著名的入門視譜曲之一！',
+            steps: [
+              { keys: ['C4'], duration: 'q', finger: '右手 1 指', count: '第 1 拍', theory: '下加一線中央 C4 開始「小星星」主音。' },
+              { keys: ['C4'], duration: 'q', finger: '右手 1 指', count: '第 2 拍', theory: '重複同音，建立穩定節奏感。' },
+              { keys: ['G4'], duration: 'q', finger: '右手 5 指', count: '第 3 拍', theory: '跳進至第二線 G4（五度）。' },
+              { keys: ['G4'], duration: 'q', finger: '右手 5 指', count: '第 4 拍', theory: '重複 G4。' },
+              { keys: ['A4'], duration: 'q', finger: '右手 5 指 (伸展)', count: '第 1 拍', theory: '第二間 A4。' },
+              { keys: ['A4'], duration: 'q', finger: '右手 5 指', count: '第 2 拍', theory: '重複 A4。' },
+              { keys: ['G4'], duration: 'h', finger: '右手 5 指', count: '第 3-4 拍', theory: '回到 G4，二分音符持續兩拍結束樂句。' }
+            ]
+          },
+          {
+            id: 'g1-4',
+            title: '流行範例：歡樂頌（Ode to Joy）開頭',
+            clef: 'treble',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 84,
+            summary: '貝多芬《第九號交響曲》歡樂頌主旋律簡化版。級進上下行，是練習視譜連貫性的最佳流行經典片段。',
+            steps: [
+              { keys: ['E4'], duration: 'q', finger: '右手 3 指', count: '第 1 拍', theory: '第一線 E4 開始「歡樂頌」著名動機。' },
+              { keys: ['E4'], duration: 'q', finger: '右手 3 指', count: '第 2 拍', theory: '重複 E4。' },
+              { keys: ['F4'], duration: 'q', finger: '右手 4 指', count: '第 3 拍', theory: '級進上行至第一間 F4。' },
+              { keys: ['G4'], duration: 'q', finger: '右手 5 指', count: '第 4 拍', theory: '繼續上行至第二線 G4。' },
+              { keys: ['G4'], duration: 'q', finger: '右手 5 指', count: '第 1 拍', theory: '重複 G4。' },
+              { keys: ['F4'], duration: 'q', finger: '右手 4 指', count: '第 2 拍', theory: '級進下行。' },
+              { keys: ['E4'], duration: 'q', finger: '右手 3 指', count: '第 3 拍', theory: '繼續下行。' },
+              { keys: ['D4'], duration: 'q', finger: '右手 2 指', count: '第 4 拍', theory: '到下加一間 D4，完成經典八音動機。' }
+            ]
+          }
+        ],
+        questions: [
+          { id: 'q1-1', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音譜號單音', events: [{ keys: ['C4'], duration: 'w' }], hint: '下加一線的音符是中央 C4' },
+          { id: 'q1-2', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音譜號單音', events: [{ keys: ['E4'], duration: 'h' }], hint: '高音譜號第一線為 E4 (Mi)' },
+          { id: 'q1-3', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音譜號單音', events: [{ keys: ['G4'], duration: 'q' }], hint: '高音譜號第二線（譜號中心線）為 G4' },
+          { id: 'q1-4', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音譜號單音', events: [{ keys: ['D4'], duration: 'q' }], hint: '位於第一線正下方的下加一間是 D4' },
+          { id: 'q1-5', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音譜號單音', events: [{ keys: ['F4'], duration: 'h' }], hint: '第一間（第一線與第二線之間）是 F4' },
+          { id: 'q1-6', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音譜號單音', events: [{ keys: ['C3'], duration: 'w' }], hint: '低音譜號第二間為 C3' },
+          { id: 'q1-7', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音譜號單音', events: [{ keys: ['F3'], duration: 'h' }], hint: '低音譜號兩點夾住的第四線是 F3' },
+          { id: 'q1-8', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音譜號單音', events: [{ keys: ['G3'], duration: 'q' }], hint: '低音譜號第四間為 G3' },
+          { id: 'q1-9', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音譜號單音', events: [{ keys: ['E3'], duration: 'q' }], hint: '低音譜號第三間為 E3' },
+          { id: 'q1-10', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '兩音視譜連線', events: [{ keys: ['C4'], duration: 'h' }, { keys: ['G4'], duration: 'h' }], hint: '先彈中央 C4，再彈第二線 G4' },
+          { id: 'q1-11', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '兩音視譜連線', events: [{ keys: ['C3'], duration: 'h' }, { keys: ['G3'], duration: 'h' }], hint: '先彈第二間 C3，再彈第四間 G3' },
+          { id: 'q1-12', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '三音視譜樂句', events: [{ keys: ['E4'], duration: 'q' }, { keys: ['D4'], duration: 'q' }, { keys: ['C4'], duration: 'h' }], hint: 'Mi - Re - Do 級進下行' },
+          { id: 'q1-13', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '流行曲：小星星片段', events: [{ keys: ['C4'], duration: 'q' }, { keys: ['C4'], duration: 'q' }, { keys: ['G4'], duration: 'q' }, { keys: ['G4'], duration: 'q' }], hint: '小星星開頭：Do Do Sol Sol' },
+          { id: 'q1-14', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '流行曲：小星星片段', events: [{ keys: ['A4'], duration: 'q' }, { keys: ['A4'], duration: 'q' }, { keys: ['G4'], duration: 'h' }], hint: '小星星第二句：La La Sol' },
+          { id: 'q1-15', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '流行曲：歡樂頌動機', events: [{ keys: ['E4'], duration: 'q' }, { keys: ['E4'], duration: 'q' }, { keys: ['F4'], duration: 'q' }, { keys: ['G4'], duration: 'q' }], hint: '歡樂頌開頭：Mi Mi Fa Sol' },
+          { id: 'q1-16', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '流行曲：生日快樂開頭', events: [{ keys: ['C4'], duration: '8' }, { keys: ['C4'], duration: '8' }, { keys: ['D4'], duration: 'q' }, { keys: ['C4'], duration: 'q' }], hint: '生日快樂歌開頭簡化：Do Do Re Do' },
+          { id: 'q1-17', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音流行伴奏型', events: [{ keys: ['C3'], duration: 'h' }, { keys: ['G3'], duration: 'h' }], hint: '流行常見低音進行：C3 到 G3' }
+        ]
+      },
+      {
+        level: 2,
+        code: 'LV.02',
+        title: '初級：五指音型與八分音符',
+        subtitle: '擴展至完整八度音階 (C4–C5) · 八分音符與附點節奏 · 含生日快樂、瑪莉有隻小綿羊流行範例',
+        badge: '音階拓展',
+        unlockThreshold: 70,
+        goals: [
+          '熟練高音譜號第三間 C5 與低音譜號上加一線中央 C4',
+          '掌握八分音符（半拍）連續進行與附點二分音符（3拍）節奏感',
+          '訓練級進（Step）與跳進（Skip）的快速輪廓辨識',
+          '透過《生日快樂》《瑪莉有隻小綿羊》等流行曲強化節奏視譜'
+        ],
+        guidedExamples: [
+          {
+            id: 'g2-1',
+            title: '範例 2A：高音譜號 C 大調上半部 (G4–C5)',
+            clef: 'treble',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 84,
+            summary: '掌握第三線 B4 與第三間 C5（高音 Do），留意八分音符符尾相連時的半拍律動。',
+            steps: [
+              { keys: ['G4'], duration: 'q', finger: '右手 1 指 (轉指後)', count: '第 1 拍', theory: '由第二線 G4 開始向上延伸至高八度。' },
+              { keys: ['A4'], duration: '8', finger: '右手 2 指', count: '第 2 拍前半 (2)', theory: '第二間為標準音 A4 (440Hz)，八分音符佔半拍。' },
+              { keys: ['B4'], duration: '8', finger: '右手 3 指', count: '第 2 拍後半 (&)', theory: '五線譜正中央的第三線為 B4 (Si)，符桿開始朝下。' },
+              { keys: ['C5'], duration: 'h', finger: '右手 4 指', count: '第 3-4 拍 (二分音符)', theory: '第三間為高音 C5，與下加一線 C4 形成八度對稱！' }
+            ]
+          },
+          {
+            id: 'g2-2',
+            title: '範例 2B：3/4 拍圓舞曲附點律動',
+            clef: 'bass',
+            keySignature: 'C',
+            timeSignature: '3/4',
+            bpm: 88,
+            summary: '3/4 拍每小節三拍，附點二分音符佔滿整小節三拍。',
+            steps: [
+              { keys: ['C3'], duration: 'q', finger: '左手 5 指', count: '第 1 拍 (重拍)', theory: '圓舞曲第一拍低音 C3 需清晰穩定。' },
+              { keys: ['G3'], duration: 'q', finger: '左手 2 指', count: '第 2 拍 (弱拍)', theory: '上行五度至第四間 G3。' },
+              { keys: ['A3'], duration: 'q', finger: '左手 1 指', count: '第 3 拍 (弱拍)', theory: '低音譜號最頂端的第五線為 A3 (La)。' },
+              { keys: ['C4'], duration: 'hd', finger: '左手 1 指 (跨指)', count: '第 1-2-3 拍 (附點二分)', theory: '低音譜號「上加一線」即為中央 C4，與高音譜號下加一線完全同音！' }
+            ]
+          },
+          {
+            id: 'g2-3',
+            title: '流行範例：生日快樂歌（Happy Birthday）簡化版',
+            clef: 'treble',
+            keySignature: 'C',
+            timeSignature: '3/4',
+            bpm: 90,
+            summary: '全球最常彈的流行慶生曲簡化旋律。練習附點與級進，適合 Level 2 八分/四分混合節奏訓練。',
+            steps: [
+              { keys: ['C4'], duration: '8', finger: '右手 1 指', count: '第 1 拍前半', theory: '開始音中央 C4。' },
+              { keys: ['C4'], duration: '8', finger: '右手 1 指', count: '第 1 拍後半', theory: '重複。' },
+              { keys: ['D4'], duration: 'q', finger: '右手 2 指', count: '第 2 拍', theory: '級進至 D4。' },
+              { keys: ['C4'], duration: 'q', finger: '右手 1 指', count: '第 3 拍', theory: '回到 C4。' },
+              { keys: ['F4'], duration: 'q', finger: '右手 4 指', count: '第 1 拍', theory: '跳進至 F4。' },
+              { keys: ['E4'], duration: 'h', finger: '右手 3 指', count: '第 2-3 拍', theory: '解決至 E4，二分音符。' }
+            ]
+          },
+          {
+            id: 'g2-4',
+            title: '流行範例：Mary Had a Little Lamb 級進練習',
+            clef: 'treble',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 88,
+            summary: '經典英文童謠《瑪莉有隻小綿羊》，幾乎全是級進，是訓練眼睛「看前一個音」的絕佳流行教材。',
+            steps: [
+              { keys: ['E4'], duration: 'q', finger: '右手 3 指', count: '第 1 拍', theory: 'E4 開始。' },
+              { keys: ['D4'], duration: 'q', finger: '右手 2 指', count: '第 2 拍', theory: '級進下行。' },
+              { keys: ['C4'], duration: 'q', finger: '右手 1 指', count: '第 3 拍', theory: '繼續至中央 C。' },
+              { keys: ['D4'], duration: 'q', finger: '右手 2 指', count: '第 4 拍', theory: '回升。' },
+              { keys: ['E4'], duration: 'q', finger: '右手 3 指', count: '第 1 拍', theory: '重複動機。' },
+              { keys: ['E4'], duration: 'q', finger: '右手 3 指', count: '第 2 拍', theory: '重複。' },
+              { keys: ['E4'], duration: 'h', finger: '右手 3 指', count: '第 3-4 拍', theory: '長音結束樂句。' }
+            ]
+          }
+        ],
+        questions: [
+          { id: 'q2-1', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音域辨識', events: [{ keys: ['A4'], duration: 'q' }], hint: '高音譜號第二間為 A4 (La)' },
+          { id: 'q2-2', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音域辨識', events: [{ keys: ['B4'], duration: 'q' }], hint: '高音譜號正中央第三線為 B4 (Si)' },
+          { id: 'q2-3', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '高音域辨識', events: [{ keys: ['C5'], duration: 'h' }], hint: '高音譜號第三間為高音 C5' },
+          { id: 'q2-4', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音高音域', events: [{ keys: ['A3'], duration: 'q' }], hint: '低音譜號最上方第五線為 A3' },
+          { id: 'q2-5', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音高音域', events: [{ keys: ['B3'], duration: 'q' }], hint: '低音譜號第五線上方的上加一間為 B3' },
+          { id: 'q2-6', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '跨譜號同音', events: [{ keys: ['C4'], duration: 'h' }], hint: '低音譜號上加一線就是中央 C4！' },
+          { id: 'q2-7', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '八分音符級進', events: [{ keys: ['G4'], duration: '8' }, { keys: ['A4'], duration: '8' }, { keys: ['B4'], duration: '8' }, { keys: ['C5'], duration: '8' }], hint: 'Sol - La - Si - Do 連續八分音符上行' },
+          { id: 'q2-8', clef: 'bass', keySignature: 'C', timeSignature: '3/4', category: '三拍子音型', events: [{ keys: ['C3'], duration: 'q' }, { keys: ['E3'], duration: 'q' }, { keys: ['G3'], duration: 'q' }], hint: 'C 大調主三和弦分解：C3 - E3 - G3' },
+          { id: 'q2-9', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '五指音型視譜', events: [{ keys: ['C5'], duration: 'q' }, { keys: ['A4'], duration: 'q' }, { keys: ['F4'], duration: 'q' }, { keys: ['D4'], duration: 'q' }], hint: '下行三度跳進：C5 - A4 - F4 - D4' },
+          { id: 'q2-10', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音進行', events: [{ keys: ['G3'], duration: '8' }, { keys: ['F3'], duration: '8' }, { keys: ['E3'], duration: 'q' }, { keys: ['D3'], duration: 'h' }], hint: '低音譜號第四間 G3 級進下行至第三線 D3' },
+          { id: 'q2-11', clef: 'treble', keySignature: 'C', timeSignature: '3/4', category: '流行曲：生日快樂', events: [{ keys: ['C4'], duration: '8' }, { keys: ['C4'], duration: '8' }, { keys: ['D4'], duration: 'q' }, { keys: ['C4'], duration: 'q' }, { keys: ['F4'], duration: 'q' }], hint: '生日快樂歌開頭' },
+          { id: 'q2-12', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '流行曲：瑪莉有隻小綿羊', events: [{ keys: ['E4'], duration: 'q' }, { keys: ['D4'], duration: 'q' }, { keys: ['C4'], duration: 'q' }, { keys: ['D4'], duration: 'q' }], hint: 'Mary Had a Little Lamb 開頭級進' },
+          { id: 'q2-13', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '流行曲：小星星後半', events: [{ keys: ['F4'], duration: 'q' }, { keys: ['F4'], duration: 'q' }, { keys: ['E4'], duration: 'q' }, { keys: ['E4'], duration: 'q' }], hint: '小星星：Fa Fa Mi Mi' },
+          { id: 'q2-14', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '八分+四分混合', events: [{ keys: ['G4'], duration: '8' }, { keys: ['A4'], duration: '8' }, { keys: ['B4'], duration: 'q' }, { keys: ['C5'], duration: 'q' }], hint: 'Sol La Si Do 混合節奏' }
+        ]
+      },
+      {
+        level: 3,
+        code: 'LV.03',
+        title: '中級：升降記號與調號辨識',
+        subtitle: '升記號 (♯) · 降記號 (♭) · 還原記號 (♮) · G 大調與 F 大調常見音型',
+        badge: '調性掌控',
+        unlockThreshold: 70,
+        goals: [
+          '正確辨識臨時升記號（向右黑鍵）與臨時降記號（向左黑鍵）',
+          '掌握 G 大調（一個升記號 F♯）固定升 Fa 的讀譜習慣',
+          '掌握 F 大調（一個降記號 B♭）固定降 Si 的讀譜習慣'
+        ],
+        guidedExamples: [
+          {
+            id: 'g3-1',
+            title: '範例 3A：G 大調調號與導音 F♯4',
+            clef: 'treble',
+            keySignature: 'G',
+            timeSignature: '4/4',
+            bpm: 84,
+            summary: '譜號旁第五線有升記號，代表全曲所有 F 音都必須自動彈成黑鍵 F♯！',
+            steps: [
+              { keys: ['G4'], duration: 'q', finger: '右手 1 指', count: '第 1 拍', theory: 'G 大調主音 G4 開始。' },
+              { keys: ['B4'], duration: 'q', finger: '右手 3 指', count: '第 2 拍', theory: '上行三度至 B4。' },
+              { keys: ['A4'], duration: 'q', finger: '右手 2 指', count: '第 3 拍', theory: '回落至 A4。' },
+              { keys: ['F#4'], duration: 'q', finger: '右手 2 指 (黑鍵)', count: '第 4 拍', theory: '注意！雖然第一間旁沒寫 ♯，但受 G 大調調號影響，必須彈 F♯4 黑鍵！' }
+            ]
+          },
+          {
+            id: 'g3-2',
+            title: '範例 3B：F 大調與臨時還原記號 (♮)',
+            clef: 'treble',
+            keySignature: 'F',
+            timeSignature: '4/4',
+            bpm: 80,
+            summary: 'F 大調第三線有降記號 (B♭)，遇到還原記號 (♮) 則恢復白鍵 B4。',
+            steps: [
+              { keys: ['F4'], duration: 'q', finger: '右手 1 指', count: '第 1 拍', theory: 'F 大調主音 F4。' },
+              { keys: ['A4'], duration: 'q', finger: '右手 3 指', count: '第 2 拍', theory: '上行三度 A4。' },
+              { keys: ['Bb4'], duration: 'q', finger: '右手 4 指 (黑鍵)', count: '第 3 拍', theory: '受 F 大調調號影響，第三線 B 自動降半音為 B♭4 (A♯4 黑鍵)。' },
+              { keys: ['B4'], duration: 'q', finger: '右手 4 指 (白鍵)', count: '第 4 拍', theory: '音符前方出現還原記號 (♮)，解除降記號，彈奏白鍵 B4！' }
+            ]
+          }
+        ],
+        questions: [
+          { id: 'q3-1', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '臨時升記號', events: [{ keys: ['F#4'], duration: 'h' }], hint: 'F4 升高半音為黑鍵 F♯4' },
+          { id: 'q3-2', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '臨時降記號', events: [{ keys: ['Bb4'], duration: 'h' }], hint: 'B4 降低半音為黑鍵 B♭4（即 A♯4）' },
+          { id: 'q3-3', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '低音升降記號', events: [{ keys: ['C#3'], duration: 'h' }], hint: 'C3 升高半音為黑鍵 C♯3' },
+          { id: 'q3-4', clef: 'treble', keySignature: 'G', timeSignature: '4/4', category: 'G大調調號視譜', events: [{ keys: ['G4'], duration: 'q' }, { keys: ['F#4'], duration: 'q' }, { keys: ['G4'], duration: 'h' }], hint: 'G 大調調號：所有 F 音皆需彈 F♯4 黑鍵' },
+          { id: 'q3-5', clef: 'treble', keySignature: 'F', timeSignature: '4/4', category: 'F大調調號視譜', events: [{ keys: ['F4'], duration: 'q' }, { keys: ['Bb4'], duration: 'q' }, { keys: ['A4'], duration: 'h' }], hint: 'F 大調調號：第三線 B 需彈 B♭4 黑鍵' },
+          { id: 'q3-6', clef: 'bass', keySignature: 'G', timeSignature: '4/4', category: '低音G大調', events: [{ keys: ['D3'], duration: 'q' }, { keys: ['F#3'], duration: 'q' }, { keys: ['G3'], duration: 'h' }], hint: '低音譜號第四線 F 受 G 大調調號影響為 F♯3' },
+          { id: 'q3-7', clef: 'treble', keySignature: 'F', timeSignature: '4/4', category: '還原記號應用', events: [{ keys: ['Bb4'], duration: 'q' }, { keys: ['B4'], duration: 'q' }, { keys: ['C5'], duration: 'h' }], hint: '第一音受調號為 B♭4，第二音有還原記號故彈白鍵 B4' },
+          { id: 'q3-8', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '半音階練習', events: [{ keys: ['C4'], duration: '8' }, { keys: ['C#4'], duration: '8' }, { keys: ['D4'], duration: '8' }, { keys: ['D#4'], duration: '8' }], hint: 'C4 - C♯4 - D4 - D♯4 半音上行' },
+          { id: 'q3-9', clef: 'bass', keySignature: 'F', timeSignature: '4/4', category: '低音F大調', events: [{ keys: ['F3'], duration: 'q' }, { keys: ['A3'], duration: 'q' }, { keys: ['Bb3'], duration: 'h' }], hint: 'F 大調低音：第二線 B 需降半音為 B♭3' },
+          { id: 'q3-10', clef: 'treble', keySignature: 'G', timeSignature: '4/4', category: 'G大調分解和弦', events: [{ keys: ['D4'], duration: 'q' }, { keys: ['F#4'], duration: 'q' }, { keys: ['A4'], duration: 'q' }, { keys: ['G4'], duration: 'q' }], hint: '屬七和弦解決至主音，留意 F♯4' }
+        ]
+      },
+      {
+        level: 4,
+        code: 'LV.04',
+        title: '中高級：音程跳躍與雙手合奏',
+        subtitle: '三度/五度/八度雙音 · 和弦柱式視譜 · 大譜表雙手對位視譜',
+        badge: '和聲視奏',
+        unlockThreshold: 70,
+        goals: [
+          '透過「線對線、間對間」快速識別三度、五度與八度雙音音程',
+          '同時或依序按下多音和弦組成音，培養縱向和聲閱讀能力',
+          '閱讀大譜表（Grand Staff）：左手低音聲部＋右手高音旋律'
+        ],
+        guidedExamples: [
+          {
+            id: 'g4-1',
+            title: '範例 4A：雙音音程快速辨識 (三度、五度、八度)',
+            clef: 'treble',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 72,
+            summary: '雙音視譜訣竅：線與線相鄰為三度，隔一條線為五度，一線一間跨越八格為八度！',
+            steps: [
+              { keys: ['C4', 'E4'], duration: 'h', finger: '右手 1 + 3 指', count: '第 1-2 拍 (大三度)', theory: '下加一線 C4 與第一線 E4（線對線相鄰），同時按下！' },
+              { keys: ['C4', 'G4'], duration: 'h', finger: '右手 1 + 5 指', count: '第 3-4 拍 (純五度)', theory: '下加一線 C4 與第二線 G4（中間隔第一線），形成空靈的純五度。' },
+              { keys: ['C4', 'C5'], duration: 'w', finger: '右手 1 + 5 指 (張開)', count: '第 1-2-3-4 拍 (純八度)', theory: '下加一線 C4 與第三間 C5（一線一間），為完整八度音程。' }
+            ]
+          },
+          {
+            id: 'g4-2',
+            title: '範例 4B：大譜表 (Grand Staff) 雙手合奏織體',
+            clef: 'grand',
+            keySignature: 'C',
+            timeSignature: '4/4',
+            bpm: 76,
+            summary: '大譜表由大括號連接高音與低音譜表，需從下往上先看左手根音再看右手旋律。',
+            steps: [
+              { keys: ['C3', 'G4'], duration: 'h', finger: '左 5 指 + 右 3 指', count: '第 1-2 拍', theory: '左手低音 C3 奠定和聲根音，右手同時奏出旋律音 G4。' },
+              { keys: ['G3', 'E4'], duration: 'h', finger: '左 1 指 + 右 1 指', count: '第 3-4 拍', theory: '左手上行至 G3，右手下行至 E4，形成反向進行。' },
+              { keys: ['C3', 'E4', 'G4'], duration: 'w', finger: '左 5 指 + 右 1,3 指', count: '第 1-2-3-4 拍 (C大三和弦)', theory: '雙手共同構成飽滿的 C 大調主和弦 (C3 + E4 + G4)。' }
+            ]
+          }
+        ],
+        questions: [
+          { id: 'q4-1', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '雙音：大三度', events: [{ keys: ['C4', 'E4'], duration: 'w' }], hint: '同時或依序按下 C4 與 E4' },
+          { id: 'q4-2', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '雙音：純五度', events: [{ keys: ['C4', 'G4'], duration: 'w' }], hint: '下加一線 C4 + 第二線 G4（純五度）' },
+          { id: 'q4-3', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '雙音：純八度', events: [{ keys: ['C4', 'C5'], duration: 'w' }], hint: '下加一線 C4 + 第三間 C5（八度）' },
+          { id: 'q4-4', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '三和弦視譜', events: [{ keys: ['C4', 'E4', 'G4'], duration: 'w' }], hint: 'C 大調原位三和弦：C4 + E4 + G4' },
+          { id: 'q4-5', clef: 'bass', keySignature: 'C', timeSignature: '4/4', category: '左手五度伴奏', events: [{ keys: ['C3', 'G3'], duration: 'w' }], hint: '低音譜號第二間 C3 + 第四間 G3' },
+          { id: 'q4-6', clef: 'grand', keySignature: 'C', timeSignature: '4/4', category: '大譜表雙手雙音', events: [{ keys: ['C3', 'E4'], duration: 'h' }, { keys: ['G3', 'D4'], duration: 'h' }], hint: '第一拍 C3+E4，第二拍 G3+D4' },
+          { id: 'q4-7', clef: 'treble', keySignature: 'G', timeSignature: '4/4', category: 'G大調三和弦', events: [{ keys: ['G4', 'B4', 'D4'], duration: 'w' }], hint: 'G 大調三和弦組成音：D4 + G4 + B4' },
+          { id: 'q4-8', clef: 'grand', keySignature: 'C', timeSignature: '4/4', category: '大譜表終止式', events: [{ keys: ['G3', 'B4'], duration: 'h' }, { keys: ['C3', 'C5'], duration: 'h' }], hint: '導音解決：G3+B4 進行至八度 C3+C5' },
+          { id: 'q4-9', clef: 'treble', keySignature: 'F', timeSignature: '4/4', category: 'F大調三和弦', events: [{ keys: ['F4', 'A4', 'C5'], duration: 'w' }], hint: 'F 大調原位三和弦：F4 + A4 + C5' },
+          { id: 'q4-10', clef: 'grand', keySignature: 'G', timeSignature: '4/4', category: '大譜表G大調', events: [{ keys: ['G3', 'F#4'], duration: 'h' }, { keys: ['G3', 'G4'], duration: 'h' }], hint: '留意 G 大調調號 F♯4，解決至 G4' }
+        ]
+      },
+      {
+        level: 5,
+        code: 'LV.05',
+        title: '進階：變奏節奏、切分與視譜挑戰',
+        subtitle: '十六分音符組合 · 休止符與切分律動 · 跨把位大譜表綜合挑戰',
+        badge: '演奏家級',
+        unlockThreshold: 70,
+        goals: [
+          '快速視讀十六分音符跑動與切分節奏（八分-四分-八分）',
+          '精準辨識跨譜表大跳音程與多調性臨時記號轉換',
+          '在限時視譜挑戰中維持 85% 以上首見視奏（Prima Vista）準確率'
+        ],
+        guidedExamples: [
+          {
+            id: 'g5-1',
+            title: '範例 5A：切分節奏與十六分音符裝飾樂句',
+            clef: 'treble',
+            keySignature: 'G',
+            timeSignature: '4/4',
+            bpm: 92,
+            summary: '結合切分音（短-長-短）與十六分音符級進，訓練眼睛超前閱讀下一拍（Look-Ahead）的能力。',
+            steps: [
+              { keys: ['B4'], duration: '8', finger: '右手 3 指', count: '第 1 拍前半', theory: '切分音型起始短音 B4。' },
+              { keys: ['D4'], duration: 'q', finger: '右手 1 指', count: '第 1 拍後半～第 2 拍前半 (切分重音)', theory: '下跳六度至 D4，佔滿一拍形成切分律動。' },
+              { keys: ['F#4'], duration: '8', finger: '右手 2 指', count: '第 2 拍後半', theory: 'G 大調 F♯4 導音推進。' },
+              { keys: ['G4'], duration: '16', finger: '右手 1 指', count: '第 3 拍 (1)', theory: '十六分音符快速跑動開始：G4' },
+              { keys: ['A4'], duration: '16', finger: '右手 2 指', count: '第 3 拍 (e)', theory: '十六分音符：A4' },
+              { keys: ['B4'], duration: '16', finger: '右手 3 指', count: '第 3 拍 (&)', theory: '十六分音符：B4' },
+              { keys: ['C5'], duration: '16', finger: '右手 4 指', count: '第 3 拍 (a)', theory: '十六分音符：C5，平滑連接至下一拍。' }
+            ]
+          },
+          {
+            id: 'g5-2',
+            title: '範例 5B：古典奏鳴曲大譜表雙手織體',
+            clef: 'grand',
+            keySignature: 'F',
+            timeSignature: '4/4',
+            bpm: 88,
+            summary: 'F 大調大譜表綜合視奏，包含低音八度跳進與右手和弦旋律。',
+            steps: [
+              { keys: ['F3', 'A4', 'C5'], duration: 'h', finger: '左 5 指 + 右 2,4 指', count: '第 1-2 拍', theory: '左手低音 F3 支撐，右手奏出高音三度雙音 A4+C5。' },
+              { keys: ['C3', 'G4', 'Bb4'], duration: 'h', finger: '左 5 指 + 右 1,3 指', count: '第 3-4 拍', theory: '屬七和弦聲響：左手 C3 配右手 G4 + B♭4（受 F 大調調號影響）。' },
+              { keys: ['F3', 'F4', 'A4'], duration: 'w', finger: '左 5 指 + 右 1,3 指', count: '第 1-2-3-4 拍', theory: '完整解決回 F 大調主和弦！' }
+            ]
+          }
+        ],
+        questions: [
+          { id: 'q5-1', clef: 'treble', keySignature: 'G', timeSignature: '4/4', category: '切分音型視譜', events: [{ keys: ['B4'], duration: '8' }, { keys: ['G4'], duration: 'q' }, { keys: ['F#4'], duration: '8' }, { keys: ['G4'], duration: 'h' }], hint: '切分節奏：B4 - G4 - F♯4 - G4' },
+          { id: 'q5-2', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '十六分音符跑動', events: [{ keys: ['C5'], duration: '16' }, { keys: ['B4'], duration: '16' }, { keys: ['A4'], duration: '16' }, { keys: ['G4'], duration: '16' }], hint: '高音 C5 十六分音符快速下行：C5-B4-A4-G4' },
+          { id: 'q5-3', clef: 'grand', keySignature: 'F', timeSignature: '4/4', category: '大譜表F大調合奏', events: [{ keys: ['F3', 'A4'], duration: 'h' }, { keys: ['Bb3', 'G4'], duration: 'h' }], hint: '留意第二組左手為 F 大調調號 B♭3' },
+          { id: 'q5-4', clef: 'treble', keySignature: 'C', timeSignature: '4/4', category: '半音臨時記號樂句', events: [{ keys: ['E4'], duration: '8' }, { keys: ['D#4'], duration: '8' }, { keys: ['E4'], duration: '8' }, { keys: ['B4'], duration: '8' }], hint: '致愛麗絲經典動機變形：E4 - D♯4 - E4 - B4' },
+          { id: 'q5-5', clef: 'grand', keySignature: 'G', timeSignature: '4/4', category: '大譜表和弦進行', events: [{ keys: ['G3', 'B4', 'D4'], duration: 'h' }, { keys: ['D3', 'F#4', 'A4'], duration: 'h' }], hint: 'I 級 (G-B-D) 到 V 級 (D-F♯-A)' },
+          { id: 'q5-6', clef: 'bass', keySignature: 'F', timeSignature: '4/4', category: '低音大跳與還原', events: [{ keys: ['F3'], duration: 'q' }, { keys: ['Bb3'], duration: 'q' }, { keys: ['B3'], duration: 'q' }, { keys: ['C4'], duration: 'q' }], hint: 'F3 -> B♭3(調號) -> B3(還原) -> 中央 C4' },
+          { id: 'q5-7', clef: 'grand', keySignature: 'C', timeSignature: '4/4', category: '三聲部厚實和弦', events: [{ keys: ['C3', 'G3', 'E4', 'C5'], duration: 'w' }], hint: '低音五度 C3+G3 配高音六度 E4+C5' },
+          { id: 'q5-8', clef: 'treble', keySignature: 'F', timeSignature: '4/4', category: 'F大調琶音挑戰', events: [{ keys: ['F4'], duration: '8' }, { keys: ['A4'], duration: '8' }, { keys: ['C5'], duration: '8' }, { keys: ['Bb4'], duration: '8' }, { keys: ['G4'], duration: 'h' }], hint: 'F4 - A4 - C5 - B♭4 - G4' },
+          { id: 'q5-9', clef: 'grand', keySignature: 'G', timeSignature: '4/4', category: '屬七解決大譜表', events: [{ keys: ['D3', 'C4', 'F#4'], duration: 'h' }, { keys: ['G3', 'B4', 'G4'], duration: 'h' }], hint: 'D7 (D3+C4+F♯4) 解決至 G 大調 (G3+G4+B4)' },
+          { id: 'q5-10', clef: 'grand', keySignature: 'C', timeSignature: '4/4', category: '終極視譜綜合題', events: [{ keys: ['C3', 'E4', 'G4'], duration: 'q' }, { keys: ['F3', 'F4', 'A4'], duration: 'q' }, { keys: ['G3', 'D4', 'B4'], duration: 'q' }, { keys: ['C3', 'C4', 'C5'], duration: 'q' }], hint: 'I - IV - V - I 完整雙手四步和聲進行' }
+        ]
+      }
+    ];
+
+    /**
+     * ============================================================================
+     * 1B. MUSIC THEORY & NOTATION HANDBOOK DATA (視譜樂理知識書百科資料庫)
+     * ============================================================================
+     */
+    const HANDBOOK_CHAPTERS = [
+      {
+        id: 'ch-staff-clefs',
+        number: '第一章',
+        title: '五線譜與譜號基礎',
+        subtitle: '認識五線四間、加線規則，以及高音/低音譜號的定位秘密',
+        icon: 'align-justify',
+        intro: '五線譜就像一張「音高地圖」，音符畫得越高，鋼琴就往右邊（高音）彈；音符畫得越低，鋼琴就往左邊（低音）彈。',
+        entries: [
+          {
+            id: 'hb-staff-anatomy',
+            badge: '基礎空間',
+            title: '五線四間與加線（Ledger Lines）規則',
+            summary: '五條水平平行線由下往上依序稱為「第一線～第五線」，線與線之間的空隙稱為「第一間～第四間」。',
+            visualCue: '由下往上數：線 (1→5) 與 間 (1→4) 交替排列；超出五線範圍時，臨時加上去的短橫線稱為「加線」。',
+            details: [
+              '<strong>線與間交替：</strong>音符的圓頭（符頭）只會有兩種位置——「線上」（線條穿過圓心）或「間裡」（夾在兩條線中間）。每往上一格（線→間 或 間→線），鋼琴白鍵就往右移一鍵！',
+              '<strong>下加一線（中央 C）：</strong>當音符太低（或太高）超出五條線時，會在符頭上臨時畫一條短短的橫線，這就是「加線」。高音譜號下方第一條短橫線上的音，就是大名鼎鼎的<strong>中央 C（C4）</strong>。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4'], duration: 'q' },
+                { keys: ['D4'], duration: 'q' },
+                { keys: ['E4'], duration: 'q' },
+                { keys: ['F4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽：C4(下加一線) → D4(下加一間) → E4(第一線) → F4(第一間)',
+            demoSequence: [
+              { keys: ['C4'], beats: 0.8 },
+              { keys: ['D4'], beats: 0.8 },
+              { keys: ['E4'], beats: 0.8 },
+              { keys: ['F4'], beats: 1.0 }
+            ]
+          },
+          {
+            id: 'hb-treble-clef',
+            badge: '右手常用',
+            title: '高音譜號（Treble Clef / G 譜號）',
+            summary: '主要負責中央 C 往右的中高音區（通常由右手彈奏），又稱為「G 譜號」。',
+            visualCue: '符號起筆的螺旋中心，緊緊圈住由下往上數的「第二線」，定義該線就是 G4（Sol）！',
+            details: [
+              '<strong>線上記憶口訣（由下往上 1～5 線）：</strong><code class="bg-cream-100 px-1.5 py-0.5 rounded font-mono text-amber-dark">E - G - B - D - F</code>（Mi - Sol - Si - Re - Fa，英文口訣：Every Good Boy Does Fine）。',
+              '<strong>間上記憶口訣（由下往上 1～4 間）：</strong><code class="bg-cream-100 px-1.5 py-0.5 rounded font-mono text-amber-dark">F - A - C - E</code>（Fa - La - Do - Mi，剛好拼成英文單字 FACE 臉孔！）。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['E4'], duration: 'q' },
+                { keys: ['G4'], duration: 'q' },
+                { keys: ['B4'], duration: 'q' },
+                { keys: ['D4', 'F4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽：第二線基準音 G4 與線上音高',
+            demoSequence: [
+              { keys: ['E4'], beats: 0.7 },
+              { keys: ['G4'], beats: 1.1 },
+              { keys: ['B4'], beats: 0.7 },
+              { keys: ['F4'], beats: 0.9 }
+            ]
+          },
+          {
+            id: 'hb-bass-clef',
+            badge: '左手常用',
+            title: '低音譜號（Bass Clef / F 譜號）',
+            summary: '主要負責中央 C 往左的低音伴奏區（通常由左手彈奏），又稱為「F 譜號」。',
+            visualCue: '符號右側有上下兩個黑點，剛好夾住由下往上數的「第四線」，定義該線就是 F3（Fa）！',
+            details: [
+              '<strong>線上記憶口訣（由下往上 1～5 線）：</strong><code class="bg-cream-100 px-1.5 py-0.5 rounded font-mono text-amber-dark">G - B - D - F - A</code>（Sol - Si - Re - Fa - La）。',
+              '<strong>間上記憶口訣（由下往上 1～4 間）：</strong><code class="bg-cream-100 px-1.5 py-0.5 rounded font-mono text-amber-dark">A - C - E - G</code>（La - Do - Mi - Sol，第二間就是低音 C3）。'
+            ],
+            scoreConfig: {
+              clef: 'bass',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C3'], duration: 'q' },
+                { keys: ['E3'], duration: 'q' },
+                { keys: ['F3'], duration: 'q' },
+                { keys: ['G3'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽：低音 C3 → E3 → 第四線 F3 → G3',
+            demoSequence: [
+              { keys: ['C3'], beats: 0.8 },
+              { keys: ['E3'], beats: 0.8 },
+              { keys: ['F3'], beats: 1.1 },
+              { keys: ['G3'], beats: 0.9 }
+            ]
+          },
+          {
+            id: 'hb-grand-staff',
+            badge: '雙手合奏',
+            title: '大譜表（Grand Staff）與中央 C 的橋樑',
+            summary: '鋼琴譜將高音譜表（上）與低音譜表（下）用左邊的大括號（Brace）連接在一起，形成大譜表。',
+            visualCue: '高音譜號的「下加一線」與低音譜號的「上加一線」，其實是鋼琴正中央同一個琴鍵 C4！',
+            details: [
+              '<strong>鏡像對稱原理：</strong>中央 C（C4）就像兩張譜表之間的隱形橋樑。上方高音譜表管右手旋律，下方低音譜表管左手和聲。',
+              '<strong>垂直對齊規則：</strong>上下兩行譜表在垂直方向對齊的音符，代表左右手要在「同一瞬間」一起按下。'
+            ],
+            scoreConfig: {
+              clef: 'grand',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C3', 'C4'], duration: 'h' },
+                { keys: ['G3', 'G4'], duration: 'h' }
+              ]
+            },
+            demoLabel: '試聽：雙手同時彈奏 C3+C4 與 G3+G4',
+            demoSequence: [
+              { keys: ['C3', 'C4'], beats: 1.4 },
+              { keys: ['G3', 'G4'], beats: 1.4 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ch-note-anatomy',
+        number: '第二章',
+        title: '音符時值完整百科：從全音符到六十四分音符',
+        subtitle: '完整對照維基百科「音符時值」條目：符頭、符幹、符尾、符槓、附點、連音與所有休止符的相對時值系統',
+        icon: 'music-2',
+        intro: '音符時值（Note Value）用來表達各音符之間的相對持續時間。符頭的紋理（空心/實心）、符桿的有無、符尾/符槓的數量共同決定拍數。音符時值不是絕對秒數，而是相對關係：每個音符的時值剛好是下一個較短音符的兩倍。以下內容完整涵蓋從八倍全音符到二百五十六分音符的系統，以及附點、連音與休止符。',
+        entries: [
+          {
+            id: 'hb-note-value-table',
+            badge: '完整時值表',
+            title: '音符與休止符相對時值總表（以四分音符 = 1 為基準）',
+            summary: '這是鋼琴視譜最核心的對照表。每個音符的持續時間剛好是下一個的兩倍。全音符 = 4 拍、二分 = 2 拍、四分 = 1 拍、八分 = 0.5 拍、十六分 = 0.25 拍……以此類推。',
+            visualCue: '空心無桿 = 全音符(4) → 空心+桿 = 二分(2) → 實心+桿 = 四分(1) → 實心+1尾 = 八分(0.5) → 實心+2尾 = 十六分(0.25) → 實心+3尾 = 三十二分(0.125)',
+            details: [
+              '<strong>完整對照表（中文名稱 + 相對時值）：</strong><br/>• 八倍全音符 / 八倍全休止符 → 32<br/>• 四倍全音符 / 四倍全休止符 → 16<br/>• 二全音符（倍全音符） / 二全休止符 → 8<br/>• <strong>全音符 / 全休止符 → 4</strong>（最常見長音）<br/>• <strong>二分音符 / 二分休止符 → 2</strong><br/>• <strong>四分音符 / 四分休止符 → 1</strong>（基準拍）<br/>• <strong>八分音符 / 八分休止符 → 0.5</strong><br/>• <strong>十六分音符 / 十六分休止符 → 0.25</strong><br/>• 三十二分音符 / 三十二分休止符 → 0.125<br/>• 六十四分音符 / 六十四分休止符 → 0.0625<br/>• 一百二十八分音符 → 0.03125<br/>• 二百五十六分音符 → 0.015625',
+              '<strong>歷史背景（簡述）：</strong>13世紀科隆的佛朗哥發明有量記譜法；14世紀菲利普·德·維特里在《新藝術》中確立2:1比例；約1600年現代系統成形。早期紐姆記譜法的符頭形狀與時值無關。',
+              '<strong>實用記憶口訣：</strong>每多一條「尾巴」或「粗橫線（符槓）」，時值就減半（速度變兩倍快）。連音符（Beamed notes）把同拍內的八分/十六分用粗橫線連起來，方便一眼看清拍點。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4'], duration: 'w' },
+                { keys: ['C4'], duration: 'h' },
+                { keys: ['C4'], duration: 'q' },
+                { keys: ['C4'], duration: '8' },
+                { keys: ['C4'], duration: '16' }
+              ]
+            },
+            demoLabel: '試聽時值金字塔：全(4拍) → 二分(2拍) → 四分(1拍) → 八分(0.5) → 十六分(0.25)',
+            demoSequence: [
+              { keys: ['C4'], beats: 4.0 },
+              { keys: ['C4'], beats: 2.0 },
+              { keys: ['C4'], beats: 1.0 },
+              { keys: ['C4'], beats: 0.5 },
+              { keys: ['C4'], beats: 0.25 }
+            ]
+          },
+          {
+            id: 'hb-notehead-hollow-solid',
+            badge: '核心概念 01',
+            title: '符頭（Notehead）：空心圓圈 vs. 實心黑點的意思',
+            summary: '音符最基本的橢圓形部分稱為「符頭」。符頭是「空心」還是「實心」，直接決定了音符是長音還是短音！',
+            visualCue: '⚪ 空心白圓圈 ＝ 長時值（2 拍或 4 拍，聲音要持續按住不放）｜ ⚫ 實心黑圓點 ＝ 短時值（1 拍或更短）',
+            details: [
+              '<strong>為什麼要分空心與實心？</strong>在古代記譜法中，空白未塗黑的符頭代表「寬廣、延續的時間」（全音符 4 拍、二分音符 2 拍）；把圓圈塗成實心黑色，則代表「緊湊、快速的拍子」（四分音符 1 拍、八分音符 0.5 拍、十六分音符 0.25 拍）。',
+              '<strong>注意：</strong>空心或實心<strong>完全不會改變音高</strong>！畫在第二線的空心符頭與實心符頭，都是彈 G4，差別只在於你要按住幾拍。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['G4'], duration: 'h' },
+                { keys: ['G4'], duration: 'q' },
+                { keys: ['G4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽對比：空心二分音符(2拍) vs 實心四分音符(1拍+1拍)',
+            demoSequence: [
+              { keys: ['G4'], beats: 2.0 },
+              { keys: ['G4'], beats: 1.0 },
+              { keys: ['G4'], beats: 1.0 }
+            ]
+          },
+          {
+            id: 'hb-stem-meaning',
+            badge: '核心概念 02',
+            title: '符幹（Stem）：垂直線條的意思與朝向規則',
+            summary: '連接在符頭旁邊的垂直細直線稱為「符幹」。它的主要任務是把「二分音符（2拍）」與「全音符（4拍）」區分開來。',
+            visualCue: '無直條的空心圓 ＝ 全音符（4 拍）｜ 加上直條的空心圓 ＝ 二分音符（2 拍，時值減半！）',
+            details: [
+              '<strong>符幹朝上還是朝下有差別嗎？</strong>完全沒有！音高與拍數一模一樣，純粹是為了美觀、不讓線條衝出五線譜太遠。',
+              '<strong>書寫慣例：</strong>音符在<strong>第三線以下</strong>時，符幹畫在符頭右邊<strong>朝上</strong>（像英文字母 d）；音符在<strong>第三線或以上</strong>時，符幹畫在符頭左邊<strong>朝下</strong>（像英文字母 p）。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['E4'], duration: 'h' },
+                { keys: ['C5'], duration: 'h' }
+              ]
+            },
+            demoLabel: '試聽：第一線 E4(符幹朝上) 與 第三間 C5(符幹朝下) 皆為 2 拍',
+            demoSequence: [
+              { keys: ['E4'], beats: 2.0 },
+              { keys: ['C5'], beats: 2.0 }
+            ]
+          },
+          {
+            id: 'hb-flag-beam-meaning',
+            badge: '核心概念 03',
+            title: '符尾（Flag）與符槓（Beam）：尾巴與粗橫線的意思',
+            summary: '在實心四分音符的符幹末端，掛上彎彎的小尾巴（符尾），或把相鄰音符用粗橫線連起來（符槓），代表速度變快！',
+            visualCue: '黃金法則：每多加「1 條尾巴」或「1 條橫線」，音符的拍數就再除以 2（速度變兩倍快）！',
+            details: [
+              '<strong>1 條尾巴 / 1 條橫線 ＝ 八分音符（1/2 拍）：</strong>一拍裡面要均勻彈 2 個音（口訣：1-and / 嘀-嗒）。單獨出現時畫彎曲「符尾」，兩個以上相鄰時常連成一條「粗橫線（符槓）」方便閱讀。',
+              '<strong>2 條尾巴 / 2 條橫線 ＝ 十六分音符（1/4 拍）：</strong>一拍裡面要均勻彈 4 個音（口訣：1-e-and-a / 嘀-哩-嗒-啦）。看到雙橫線就是快速跑動樂句！'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4'], duration: 'q' },
+                { keys: ['D4'], duration: '8' },
+                { keys: ['E4'], duration: '8' },
+                { keys: ['F4'], duration: '16' },
+                { keys: ['G4'], duration: '16' },
+                { keys: ['A4'], duration: '16' },
+                { keys: ['B4'], duration: '16' },
+                { keys: ['C5'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽速度變化：四分(1拍) → 雙八分(半拍×2) → 四十六分(1/4拍×4) → 四分(1拍)',
+            demoSequence: [
+              { keys: ['C4'], beats: 1.0 },
+              { keys: ['D4'], beats: 0.5 },
+              { keys: ['E4'], beats: 0.5 },
+              { keys: ['F4'], beats: 0.25 },
+              { keys: ['G4'], beats: 0.25 },
+              { keys: ['A4'], beats: 0.25 },
+              { keys: ['B4'], beats: 0.25 },
+              { keys: ['C5'], beats: 1.0 }
+            ]
+          },
+          {
+            id: 'hb-rhythm-pyramid',
+            badge: '完整總表',
+            title: '五大基本音符時值金字塔對照（4/4 拍基準）',
+            summary: '從最長的全音符到最短的十六分音符，每一層都是上一層的一半時值：1 個全音符 ＝ 2 個二分 ＝ 4 個四分 ＝ 8 個八分 ＝ 16 個十六分。',
+            visualCue: '全音符(4拍) ＞ 二分音符(2拍) ＞ 四分音符(1拍) ＞ 八分音符(0.5拍) ＞ 十六分音符(0.25拍)',
+            details: [
+              '<strong>全音符（Whole Note）：</strong>⚪ 空心圓、無符幹、無尾巴 → <strong>4 拍</strong>（數 1-2-3-4）。',
+              '<strong>二分音符（Half Note）：</strong>⚪ 空心圓 ＋ 1 條符幹 → <strong>2 拍</strong>（數 1-2）。',
+              '<strong>四分音符（Quarter Note）：</strong>⚫ 實心圓 ＋ 1 條符幹 → <strong>1 拍</strong>（基準拍，數 1）。',
+              '<strong>八分音符（Eighth Note）：</strong>⚫ 實心圓 ＋ 符幹 ＋ 1 條符尾/符槓 → <strong>1/2 拍</strong>。',
+              '<strong>十六分音符（Sixteenth Note）：</strong>⚫ 實心圓 ＋ 符幹 ＋ 2 條符尾/符槓 → <strong>1/4 拍</strong>。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4'], duration: 'w' }
+              ]
+            },
+            demoLabel: '試聽：全音符持續 4 拍的完整長度',
+            demoSequence: [
+              { keys: ['C4'], beats: 4.0 }
+            ]
+          },
+          {
+            id: 'hb-dots-ties',
+            badge: '延長記號',
+            title: '附點（Augmentation Dot）與連結線（Tie）',
+            summary: '當你需要 3 拍或 1.5 拍等奇數時值時，樂譜會使用「音符右邊的小黑點（附點）」或「弧線（連結線）」。',
+            visualCue: '附點公式：原音符拍數 ＋（原音符拍數的一半）＝ 總拍數！例如：附點二分音符 ＝ 2 ＋ 1 ＝ 3 拍。',
+            details: [
+              '<strong>附點（點在符頭右邊）：</strong>延長前面音符「一半」的時值。常見組合：<strong>附點二分音符</strong>（2 + 1 = 3 拍，常見於 3/4 拍圓舞曲）、<strong>附點四分音符</strong>（1 + 0.5 = 1.5 拍，常搭配一個八分音符湊成 2 拍）。注意：點在符頭「正上方或正下方」是斷奏（跳音），點在「右邊」才是附點延長！',
+              '<strong>連結線（Tie）：</strong>一條弧線連接<strong>兩個音高完全相同</strong>的音符，彈奏時只需按第一個音，並將兩者拍數相加（例如跨過小節線的 2拍 + 2拍 ＝ 按住 4 拍不放）。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '3/4',
+              events: [
+                { keys: ['E4'], duration: 'hd' },
+                { keys: ['G4'], duration: 'qd' },
+                { keys: ['A4'], duration: '8' },
+                { keys: ['G4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽：附點二分音符(3拍) + 附點四分(1.5拍) + 八分(0.5拍) + 四分(1拍)',
+            demoSequence: [
+              { keys: ['E4'], beats: 3.0 },
+              { keys: ['G4'], beats: 1.5 },
+              { keys: ['A4'], beats: 0.5 },
+              { keys: ['G4'], beats: 1.0 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ch-rests',
+        number: '第三章',
+        title: '休止符大全：音樂中的沉默符號',
+        subtitle: '休止符代表「手離開琴鍵、安靜不發聲」的時間，每種音符都有對應拍數的休止符',
+        icon: 'pause-circle',
+        intro: '音樂不只是聲音的藝術，更是「沉默」的藝術。看到休止符時，必須準確放開琴鍵並心裡默數拍子。',
+        entries: [
+          {
+            id: 'hb-whole-half-rest',
+            badge: '長休止符',
+            title: '全休止符（4 拍）vs. 二分休止符（2 拍）',
+            summary: '這兩個長得像小黑方塊的休止符最容易搞混，差別在於它們黏在「第四線下方」還是「第三線上方」。',
+            visualCue: '記憶口訣：全休止符(4拍)比較重，所以「掛在第四線下面」往下沉；二分休止符(2拍)比較輕，所以「坐在第三線上面」像頂紳士帽！',
+            details: [
+              '<strong>全休止符（Whole Rest）：</strong>貼在第四線下方，代表<strong>休止整整 4 拍</strong>（在任何拍號中也可代表「整小節休止」）。',
+              '<strong>二分休止符（Half Rest）：</strong>坐在第三線上方，代表<strong>休止 2 拍</strong>。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['B4'], duration: 'hr', isRest: true },
+                { keys: ['C4'], duration: 'q' },
+                { keys: ['G4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽：先安靜休止 2 拍（滴答滴答），再彈 C4 → G4',
+            demoSequence: [
+              { keys: [], beats: 2.0, clickRest: true },
+              { keys: ['C4'], beats: 1.0 },
+              { keys: ['G4'], beats: 1.0 }
+            ]
+          },
+          {
+            id: 'hb-quarter-eighth-rest',
+            badge: '短休止符',
+            title: '四分休止符（1 拍）、八分休止符（1/2 拍）與十六分休止符（1/4 拍）',
+            summary: '短拍休止符常用來製造呼吸感與切分律動。',
+            visualCue: '四分休止符像「閃電 / 側飛的海鷗」(1 拍)｜八分休止符像「數字 7 / 單芽」(0.5 拍)｜十六分休止符有「兩個芽」(0.25 拍)',
+            details: [
+              '<strong>四分休止符（Quarter Rest）：</strong>形狀像垂直的閃電符號，佔據五線譜中間區域，<strong>安靜 1 拍</strong>。',
+              '<strong>八分休止符（Eighth Rest）：</strong>像一個圓頭斜槓的數字 7，<strong>安靜 1/2 拍</strong>，和八分音符一樣只有「1 顆芽」。',
+              '<strong>十六分休止符（Sixteenth Rest）：</strong>有「2 顆芽」疊在一起，<strong>安靜 1/4 拍</strong>。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['E4'], duration: 'q' },
+                { keys: ['B4'], duration: 'qr', isRest: true },
+                { keys: ['G4'], duration: '8' },
+                { keys: ['B4'], duration: '8r', isRest: true },
+                { keys: ['C5'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽切分休止律動：Mi(1拍) - 休(1拍) - Sol(半拍) - 休(半拍) - Do(1拍)',
+            demoSequence: [
+              { keys: ['E4'], beats: 1.0 },
+              { keys: [], beats: 1.0, clickRest: true },
+              { keys: ['G4'], beats: 0.5 },
+              { keys: [], beats: 0.5, clickRest: true },
+              { keys: ['C5'], beats: 1.0 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ch-accidentals-keys',
+        number: '第四章',
+        title: '升降記號與調號（半音與調性）',
+        subtitle: '掌握升記號（♯）、降記號（♭）、還原記號（♮），以及 G 大調與 F 大調的讀譜規則',
+        icon: 'hash',
+        intro: '鋼琴鍵盤除了白鍵之外還有黑鍵。升降記號就是指示我們往右或往左移動「半音（相鄰最近的一個鍵）」的路標。',
+        entries: [
+          {
+            id: 'hb-sharp-flat-natural',
+            badge: '三大變音記號',
+            title: '升記號（♯）、降記號（♭）與還原記號（♮）',
+            summary: '變音記號永遠寫在「音符的左邊」，提醒你在彈下這個音符之前先調整手指位置。',
+            visualCue: '♯ 升記號 ＝ 往右移一鍵（變高半音）｜ ♭ 降記號 ＝ 往左移一鍵（變低半音）｜ ♮ 還原記號 ＝ 取消升降，回到白鍵！',
+            details: [
+              '<strong>升記號（♯ Sharp）：</strong>將原音升高半音（往鋼琴右側移動緊鄰的一鍵）。例如 F4 加上 ♯ 就彈右上方的黑鍵 F♯4（注意：若 E 升半音，因為 E 與 F 之間沒有黑鍵，往右一鍵就是白鍵 F！）。',
+              '<strong>降記號（♭ Flat）：</strong>將原音降低半音（往鋼琴左側移動緊鄰的一鍵）。例如 B4 加上 ♭ 就彈左上方的黑鍵 B♭4。',
+              '<strong>還原記號（♮ Natural）：</strong>解除前面出現過的升記號或降記號，恢復彈奏原本的白鍵。',
+              '<strong>有效範圍規則：</strong>「臨時變音記號」只對<strong>同一小節內、相同高度的音符</strong>有效；一旦跨過小節線（垂直分隔線），就會自動恢復原狀！'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['F4'], duration: 'q' },
+                { keys: ['F#4'], duration: 'q' },
+                { keys: ['B4'], duration: 'q' },
+                { keys: ['Bb4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽半音對比：F4(白鍵) → F♯4(黑鍵) ｜ B4(白鍵) → B♭4(黑鍵)',
+            demoSequence: [
+              { keys: ['F4'], beats: 0.9 },
+              { keys: ['F#4'], beats: 0.9 },
+              { keys: ['B4'], beats: 0.9 },
+              { keys: ['Bb4'], beats: 1.1 }
+            ]
+          },
+          {
+            id: 'hb-key-signatures',
+            badge: '調號系統',
+            title: '調號（Key Signatures）：C 大調、G 大調與 F 大調',
+            summary: '如果整首曲子從頭到尾某個音都要升高或降低，作曲家會把升降記號直接寫在「譜號正右方」，這就是調號。',
+            visualCue: '調號效力：管轄「整首曲子」以及「所有八度」！看到調號，視譜前先在心裡鎖定黑鍵位置。',
+            details: [
+              '<strong>C 大調（無升降記號）：</strong>譜號旁乾乾淨淨，全部彈白鍵（除非遇到臨時記號）。',
+              '<strong>G 大調（1 個升記號 F♯）：</strong>高音譜號第五線上固定畫一個 ♯，代表全曲只要遇到任何位置的 F（無論是第一間 F4 或第五線 F5），通通都要彈成黑鍵 <strong>F♯</strong>！',
+              '<strong>F 大調（1 個降記號 B♭）：</strong>高音譜號第三線上固定畫一個 ♭，代表全曲只要遇到任何位置的 B，通通都要彈成黑鍵 <strong>B♭</strong>！'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'G',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['G4'], duration: 'q' },
+                { keys: ['A4'], duration: 'q' },
+                { keys: ['B4'], duration: 'q' },
+                { keys: ['F#4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽 G 大調音型：G4 - A4 - B4 - F♯4（受調號影響自動升 Fa）',
+            demoSequence: [
+              { keys: ['G4'], beats: 0.8 },
+              { keys: ['A4'], beats: 0.8 },
+              { keys: ['B4'], beats: 0.8 },
+              { keys: ['F#4'], beats: 1.2 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ch-meter-intervals',
+        number: '第五章',
+        title: '拍號、小節線與音程和弦辨識',
+        subtitle: '理解分數般的拍號意義、各種垂直小節線功能，以及如何一眼看穿雙音與和弦',
+        icon: 'git-commit',
+        intro: '進階視譜高手不是一個字一個字拼讀音符，而是透過「線間幾何距離」直接辨識音程與和弦形狀。',
+        entries: [
+          {
+            id: 'hb-time-signatures',
+            badge: '節奏框架',
+            title: '拍號（Time Signatures）與小節線的線條意義',
+            summary: '譜號與調號右邊的兩個上下疊加數字就是「拍號」，它規定了每個小節能裝多少拍。',
+            visualCue: '上方數字 ＝ 每小節有「幾拍」｜ 下方數字 ＝ 以「幾分音符」當作 1 拍（4 代表四分音符為一拍）',
+            details: [
+              '<strong>4/4 拍（四四拍 / 符號 C）：</strong>以四分音符為一拍，每小節 4 拍（強-弱-次強-弱），最常見的進行曲與流行曲拍號。',
+              '<strong>3/4 拍（三四拍）：</strong>以四分音符為一拍，每小節 3 拍（強-弱-弱），充滿旋轉律動的圓舞曲（華爾茲）拍號。',
+              '<strong>垂直小節線的種類：</strong><strong>單小節線</strong>（細直線，分隔每個小節）、<strong>雙小節線</strong>（兩條細直線，代表段落結束或轉調）、<strong>終止線</strong>（一細一粗雙直線，代表全曲正式結束）、<strong>反覆記號</strong>（終止線旁加兩點，代表回到前面重彈一次）。'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '3/4',
+              events: [
+                { keys: ['C4'], duration: 'q' },
+                { keys: ['E4'], duration: 'q' },
+                { keys: ['G4'], duration: 'q' }
+              ]
+            },
+            demoLabel: '試聽 3/4 拍圓舞曲律動（強 - 弱 - 弱）：C4 - E4 - G4',
+            demoSequence: [
+              { keys: ['C4'], beats: 1.0 },
+              { keys: ['E4'], beats: 1.0 },
+              { keys: ['G4'], beats: 1.0 }
+            ]
+          },
+          {
+            id: 'hb-intervals-chords',
+            badge: '快速視奏秘訣',
+            title: '音程（級進 vs. 跳進）與和弦垂直閱讀法',
+            summary: '學會觀察兩個音符之間的「線間關係」，不用數音名也能立刻張開對應的手指距離！',
+            visualCue: '級進（二度）＝ 一線一間緊貼（相鄰白鍵）｜ 三度 ＝ 線對線 或 間對間（隔一鍵）｜ 五度 ＝ 線對線中間隔一條線',
+            details: [
+              '<strong>級進（Step / 二度音程）：</strong>一個在線上、下一個緊貼在隔壁的間裡（例如 C4→D4），手指只需彈相鄰的琴鍵。',
+              '<strong>三度與五度跳進（Skip）：</strong>兩個音都在「線上」或都在「間裡」，中間沒隔線就是<strong>三度</strong>（如 C4+E4，右手 1+3 指）；中間剛好隔一條線就是<strong>五度</strong>（如 C4+G4，右手 1+5 指）。',
+              '<strong>和弦（Chords）：</strong>三個或以上垂直串在一根符幹上的音符（如 C4+E4+G4 雪人造型三和弦），代表手指要同時一起按下！'
+            ],
+            scoreConfig: {
+              clef: 'treble',
+              keySignature: 'C',
+              timeSignature: '4/4',
+              events: [
+                { keys: ['C4', 'E4'], duration: 'q' },
+                { keys: ['C4', 'G4'], duration: 'q' },
+                { keys: ['C4', 'E4', 'G4'], duration: 'h' }
+              ]
+            },
+            demoLabel: '試聽和聲色彩：大三度(C+E) → 純五度(C+G) → C大三和弦(C+E+G)',
+            demoSequence: [
+              { keys: ['C4', 'E4'], beats: 1.0 },
+              { keys: ['C4', 'G4'], beats: 1.0 },
+              { keys: ['C4', 'E4', 'G4'], beats: 2.0 }
+            ]
+          }
+        ]
+      }
+    ];
+
+    /**
+     * ============================================================================
+     * 2. WEB AUDIO PIANO & METRONOME ENGINE (多諧波鋼琴音源與節拍器引擎)
+     * ============================================================================
+     */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.metronomeTimer = null;
+        this.isMetronomeRunning = false;
+        this.bpm = 80;
+        this.beatCount = 0;
+        this.onBeatCallback = null;
+      }
+
+      unlock() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playNote(pitch, durationSec = 0.75, velocity = 0.8) {
+        if (!this.enabled) return;
+        this.unlock();
+        if (!this.ctx) return;
+
+        const keyMeta = getKeyMeta(pitch);
+        const freq = keyMeta.freq;
+        const now = this.ctx.currentTime;
+
+        // Warm Acoustic Piano Synthesis: Fundamental + 2nd & 3rd Harmonics + Lowpass Filter Envelope
+        const masterGain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(freq * 6, now);
+        filter.frequency.exponentialRampToValueAtTime(freq * 1.8, now + durationSec * 0.8);
+
+        // ADSR Envelope
+        const peakGain = 0.24 * velocity;
+        masterGain.gain.setValueAtTime(0.0001, now);
+        masterGain.gain.linearRampToValueAtTime(peakGain, now + 0.015);
+        masterGain.gain.exponentialRampToValueAtTime(peakGain * 0.45, now + 0.22);
+        masterGain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
+
+        // Fundamental (Triangle for warmth)
+        const osc1 = this.ctx.createOscillator();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(freq, now);
+
+        // 2nd Harmonic (Sine for body)
+        const osc2 = this.ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2, now);
+        const gain2 = this.ctx.createGain();
+        gain2.gain.value = 0.35;
+
+        // 3rd Harmonic (Sine for hammer brilliance)
+        const osc3 = this.ctx.createOscillator();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(freq * 3, now);
+        const gain3 = this.ctx.createGain();
+        gain3.gain.value = 0.12;
+
+        osc1.connect(filter);
+        osc2.connect(gain2);
+        gain2.connect(filter);
+        osc3.connect(gain3);
+        gain3.connect(filter);
+
+        filter.connect(masterGain);
+        masterGain.connect(this.ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc3.start(now);
+
+        osc1.stop(now + durationSec + 0.05);
+        osc2.stop(now + durationSec + 0.05);
+        osc3.stop(now + durationSec + 0.05);
+      }
+
+      playChord(pitches, durationSec = 0.9) {
+        pitches.forEach((p, idx) => {
+          setTimeout(() => this.playNote(p, durationSec, 0.72), idx * 15);
+        });
+      }
+
+      playFeedback(type) {
+        if (!this.enabled) return;
+        this.unlock();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        if (type === 'correct') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.setValueAtTime(880, now + 0.07); // A5
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        } else {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(155, now);
+          osc.frequency.linearRampToValueAtTime(125, now + 0.18);
+          gain.gain.setValueAtTime(0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        }
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.26);
+      }
+
+      playClick(accent = false) {
+        if (!this.enabled) return;
+        this.unlock();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(accent ? 1200 : 880, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
+
+        gain.gain.setValueAtTime(accent ? 0.16 : 0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+
+      startMetronome(bpm, onBeat) {
+        this.stopMetronome();
+        this.bpm = bpm;
+        this.onBeatCallback = onBeat;
+        this.isMetronomeRunning = true;
+        this.beatCount = 0;
+
+        const tick = () => {
+          if (!this.isMetronomeRunning) return;
+          const isAccent = (this.beatCount % 4) === 0;
+          this.playClick(isAccent);
+          if (this.onBeatCallback) {
+            this.onBeatCallback(this.beatCount % 4);
+          }
+          this.beatCount++;
+        };
+
+        tick();
+        const intervalMs = (60 / this.bpm) * 1000;
+        this.metronomeTimer = setInterval(tick, intervalMs);
+      }
+
+      updateBpm(newBpm) {
+        this.bpm = newBpm;
+        if (this.isMetronomeRunning) {
+          this.startMetronome(newBpm, this.onBeatCallback);
+        }
+      }
+
+      stopMetronome() {
+        this.isMetronomeRunning = false;
+        if (this.metronomeTimer) {
+          clearInterval(this.metronomeTimer);
+          this.metronomeTimer = null;
+        }
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 3. VEXFLOW SHEET MUSIC RENDERER (專業五線譜渲染引擎)
+     * ============================================================================
+     */
+    class SheetMusicRenderer {
+      constructor() {
+        this.observers = new Map();
+      }
+
+      /**
+       * Convert pitch like 'F#4' or 'Bb3' to VexFlow key 'f#/4' or 'bb/3'
+       */
+      toVexKey(pitch) {
+        const match = pitch.match(/^([A-Ga-g])([#b]?)(\d)$/);
+        if (!match) return 'c/4';
+        const [, step, accidental, octave] = match;
+        return `${step.toLowerCase()}${accidental}/${octave}`;
+      }
+
+      /**
+       * Determine if pitch belongs to bass stave in Grand Staff mode
+       */
+      isBassPitch(pitch) {
+        const meta = getKeyMeta(pitch);
+        return meta.midi < 60; // Below C4 goes to Bass clef in Grand Staff
+      }
+
+      /**
+       * Render sheet music into target container with ResizeObserver support
+       */
+      render(containerId, config) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // Clean up existing ResizeObserver if re-binding
+        if (this.observers.has(containerId)) {
+          this.observers.get(containerId).disconnect();
+        }
+
+        const draw = () => {
+          if (!document.getElementById(containerId)) return;
+          container.innerHTML = '';
+
+          if (typeof Vex === 'undefined' || !Vex.Flow) {
+            container.innerHTML = `<div class="p-6 text-center text-sm text-feedback-error">樂譜引擎載入異常，請重新整理頁面。</div>`;
+            return;
+          }
+
+          const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental, StaveConnector, Beam } = Vex.Flow;
+
+          const containerWidth = Math.max(container.clientWidth || 640, 320);
+          const isGrand = config.clef === 'grand';
+          const width = Math.min(containerWidth, 760);
+          const height = isGrand ? 255 : 165;
+
+          const renderer = new Renderer(container, Renderer.Backends.SVG);
+          renderer.resize(width, height);
+          const context = renderer.getContext();
+          context.setFont('Inter', 10);
+
+          const staveX = isGrand ? 28 : 16;
+          const staveWidth = width - (isGrand ? 44 : 32);
+
+          if (!isGrand) {
+            // SINGLE STAVE (Treble or Bass)
+            const stave = new Stave(staveX, 24, staveWidth);
+            stave.addClef(config.clef || 'treble');
+            if (config.keySignature && config.keySignature !== 'C') {
+              stave.addKeySignature(config.keySignature);
+            }
+            if (config.timeSignature) {
+              stave.addTimeSignature(config.timeSignature);
+            }
+            stave.setContext(context).draw();
+
+            const notes = this.buildVexNotes(config.events, config.clef || 'treble', config.keySignature, config.eventStates || []);
+            if (notes.length > 0) {
+              const voice = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false);
+              voice.addTickables(notes);
+
+              // Auto-beam eighth/sixteenth notes
+              const beams = Beam.generateBeams(notes);
+
+              new Formatter().joinVoices([voice]).format([voice], staveWidth - 115);
+              voice.draw(context, stave);
+              beams.forEach(b => b.setContext(context).draw());
+            }
+          } else {
+            // GRAND STAFF (Treble + Bass with Brace)
+            const trebleStave = new Stave(staveX, 18, staveWidth);
+            trebleStave.addClef('treble');
+            if (config.keySignature && config.keySignature !== 'C') {
+              trebleStave.addKeySignature(config.keySignature);
+            }
+            if (config.timeSignature) {
+              trebleStave.addTimeSignature(config.timeSignature);
+            }
+
+            const bassStave = new Stave(staveX, 128, staveWidth);
+            bassStave.addClef('bass');
+            if (config.keySignature && config.keySignature !== 'C') {
+              bassStave.addKeySignature(config.keySignature);
+            }
+            if (config.timeSignature) {
+              bassStave.addTimeSignature(config.timeSignature);
+            }
+
+            trebleStave.setContext(context).draw();
+            bassStave.setContext(context).draw();
+
+            const brace = new StaveConnector(trebleStave, bassStave);
+            brace.setType(StaveConnector.type.BRACE);
+            brace.setContext(context).draw();
+
+            const lineLeft = new StaveConnector(trebleStave, bassStave);
+            lineLeft.setType(StaveConnector.type.SINGLE_LEFT);
+            lineLeft.setContext(context).draw();
+
+            const lineRight = new StaveConnector(trebleStave, bassStave);
+            lineRight.setType(StaveConnector.type.SINGLE_RIGHT);
+            lineRight.setContext(context).draw();
+
+            // Split events into Treble notes & Bass notes
+            const trebleEvents = [];
+            const bassEvents = [];
+
+            config.events.forEach((ev) => {
+              const tKeys = ev.keys.filter(k => !this.isBassPitch(k));
+              const bKeys = ev.keys.filter(k => this.isBassPitch(k));
+
+              trebleEvents.push({
+                keys: tKeys.length > 0 ? tKeys : ['B4'],
+                duration: tKeys.length > 0 ? ev.duration : `${ev.duration}r`,
+                isRest: tKeys.length === 0
+              });
+
+              bassEvents.push({
+                keys: bKeys.length > 0 ? bKeys : ['D3'],
+                duration: bKeys.length > 0 ? ev.duration : `${ev.duration}r`,
+                isRest: bKeys.length === 0
+              });
+            });
+
+            const trebleNotes = this.buildVexNotes(trebleEvents, 'treble', config.keySignature, config.eventStates || []);
+            const bassNotes = this.buildVexNotes(bassEvents, 'bass', config.keySignature, config.eventStates || []);
+
+            const voiceT = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false).addTickables(trebleNotes);
+            const voiceB = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false).addTickables(bassNotes);
+
+            const beamsT = Beam.generateBeams(trebleNotes);
+            const beamsB = Beam.generateBeams(bassNotes);
+
+            new Formatter().joinVoices([voiceT, voiceB]).format([voiceT, voiceB], staveWidth - 120);
+
+            voiceT.draw(context, trebleStave);
+            voiceB.draw(context, bassStave);
+            beamsT.forEach(b => b.setContext(context).draw());
+            beamsB.forEach(b => b.setContext(context).draw());
+          }
+        };
+
+        draw();
+
+        const ro = new ResizeObserver(() => {
+          draw();
+        });
+        ro.observe(container);
+        this.observers.set(containerId, ro);
+      }
+
+      buildVexNotes(events, clef, keySig, eventStates) {
+        const { StaveNote, Accidental } = Vex.Flow;
+
+        return events.map((ev, idx) => {
+          const sortedKeys = [...ev.keys].sort((a, b) => getKeyMeta(a).midi - getKeyMeta(b).midi);
+          const vexKeys = sortedKeys.map(k => this.toVexKey(k));
+
+          const note = new StaveNote({
+            clef: clef,
+            keys: vexKeys,
+            duration: ev.duration || 'q',
+            auto_stem: true
+          });
+
+          // Add explicit accidentals when needed (not already covered by key signature)
+          if (!ev.isRest) {
+            sortedKeys.forEach((rawKey, keyIdx) => {
+              const match = rawKey.match(/^([A-G])([#b]?)(\d)$/);
+              if (match) {
+                const [, step, acc] = match;
+                // Show accidental if present, or natural sign if F/B in F/G major
+                if (acc === '#') {
+                  if (!(keySig === 'G' && step === 'F')) {
+                    note.addModifier(new Accidental('#'), keyIdx);
+                  }
+                } else if (acc === 'b') {
+                  if (!(keySig === 'F' && step === 'B')) {
+                    note.addModifier(new Accidental('b'), keyIdx);
+                  }
+                } else if (acc === '') {
+                  if ((keySig === 'G' && step === 'F') || (keySig === 'F' && step === 'B')) {
+                    note.addModifier(new Accidental('n'), keyIdx);
+                  }
+                }
+              }
+            });
+          }
+
+          // Color Highlight based on state: 'active' | 'correct' | 'wrong' | 'default'
+          const state = eventStates[idx] || 'default';
+          if (state === 'active') {
+            note.setStyle({ fillStyle: '#C68B59', strokeStyle: '#C68B59' });
+          } else if (state === 'correct') {
+            note.setStyle({ fillStyle: '#2E6F40', strokeStyle: '#2E6F40' });
+          } else if (state === 'wrong') {
+            note.setStyle({ fillStyle: '#B83A3A', strokeStyle: '#B83A3A' });
+          } else {
+            note.setStyle({ fillStyle: '#1E2022', strokeStyle: '#1E2022' });
+          }
+
+          return note;
+        });
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 4. STORAGE & ANALYTICS STATE MANAGER (進度儲存與學習弱點分析引擎)
+     * ============================================================================
+     */
+    const STORAGE_KEY = 'sonata_sight_reading_progress_v1';
+
+    class ProgressStore {
+      constructor() {
+        this.state = this.load();
+      }
+
+      getDefaultState() {
+        return {
+          unlockedLevel: 1,
+          levelStats: {
+            1: { attempted: 0, correct: 0, bestExamScore: 0 },
+            2: { attempted: 0, correct: 0, bestExamScore: 0 },
+            3: { attempted: 0, correct: 0, bestExamScore: 0 },
+            4: { attempted: 0, correct: 0, bestExamScore: 0 },
+            5: { attempted: 0, correct: 0, bestExamScore: 0 },
+          },
+          clefStats: {
+            treble: { attempted: 0, correct: 0 },
+            bass: { attempted: 0, correct: 0 },
+            grand: { attempted: 0, correct: 0 }
+          },
+          noteErrors: {}, // e.g., { 'F#4': 4, 'C3': 2 }
+          recentHistory: [] // Last 30 attempts
+        };
+      }
+
+      load() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return this.getDefaultState();
+          const parsed = JSON.parse(raw);
+          return { ...this.getDefaultState(), ...parsed };
+        } catch (e) {
+          console.warn('Failed to parse progress from localStorage:', e);
+          return this.getDefaultState();
+        }
+      }
+
+      save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+        } catch (e) {
+          console.warn('Failed to save progress:', e);
+        }
+      }
+
+      recordAttempt({ level, clef, targetKeys, isCorrect, category }) {
+        // Update Level Stats
+        const lv = this.state.levelStats[level] || { attempted: 0, correct: 0, bestExamScore: 0 };
+        lv.attempted += 1;
+        if (isCorrect) lv.correct += 1;
+        this.state.levelStats[level] = lv;
+
+        // Update Clef Stats
+        const cKey = clef || 'treble';
+        if (!this.state.clefStats[cKey]) {
+          this.state.clefStats[cKey] = { attempted: 0, correct: 0 };
+        }
+        this.state.clefStats[cKey].attempted += 1;
+        if (isCorrect) this.state.clefStats[cKey].correct += 1;
+
+        // Track Note Errors
+        if (!isCorrect && Array.isArray(targetKeys)) {
+          targetKeys.forEach(k => {
+            this.state.noteErrors[k] = (this.state.noteErrors[k] || 0) + 1;
+          });
+        }
+
+        // Auto-unlock next level if >= 8 attempts and >= 70% mastery
+        const mastery = this.getLevelMastery(level);
+        if (mastery >= 70 && level < 5 && this.state.unlockedLevel <= level) {
+          this.state.unlockedLevel = level + 1;
+        }
+
+        this.state.recentHistory.unshift({
+          timestamp: Date.now(),
+          level,
+          clef,
+          category,
+          isCorrect
+        });
+        if (this.state.recentHistory.length > 40) {
+          this.state.recentHistory.pop();
+        }
+
+        this.save();
+      }
+
+      recordExamResult(level, scorePercent) {
+        const lv = this.state.levelStats[level];
+        if (lv && scorePercent > (lv.bestExamScore || 0)) {
+          lv.bestExamScore = scorePercent;
+        }
+        if (scorePercent >= 80 && level < 5 && this.state.unlockedLevel <= level) {
+          this.state.unlockedLevel = level + 1;
+        }
+        this.save();
+      }
+
+      getLevelMastery(level) {
+        const lv = this.state.levelStats[level];
+        if (!lv || lv.attempted === 0) return 0;
+        const accuracy = lv.correct / lv.attempted;
+        const volumeFactor = Math.min(lv.attempted / 10, 1); // Full weight at 10+ questions
+        return Math.round(accuracy * volumeFactor * 100);
+      }
+
+      getLevelAccuracy(level) {
+        const lv = this.state.levelStats[level];
+        if (!lv || lv.attempted === 0) return 0;
+        return Math.round((lv.correct / lv.attempted) * 100);
+      }
+
+      unlockAll() {
+        this.state.unlockedLevel = 5;
+        this.save();
+      }
+
+      reset() {
+        this.state = this.getDefaultState();
+        this.save();
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 5. MAIN APPLICATION CONTROLLER (單頁多視圖互動與邏輯核心)
+     * ============================================================================
+     */
+    class PianoTrainerApp {
+      constructor() {
+        this.sound = new SoundEngine();
+        this.renderer = new SheetMusicRenderer();
+        this.store = new ProgressStore();
+
+        this.currentRoute = 'curriculum';
+        this.showKeyLabels = true;
+
+        // Guided Examples State
+        this.guidedState = {
+          level: 1,
+          exampleIdx: 0,
+          stepIdx: -1, // -1 means overview / ready
+          isPlaying: false,
+          playTimer: null
+        };
+
+        // Music Theory Handbook State
+        this.handbookState = {
+          activeChapterId: 'ch-staff-clefs',
+          searchQuery: '',
+          playingEntryId: null,
+          demoTimers: []
+        };
+
+        // Practice Mode State
+        this.practiceState = {
+          level: 1,
+          metronomeOn: false,
+          bpm: 80,
+          showHints: true,
+          currentQuestion: null,
+          currentEventIdx: 0,
+          collectedNotesInEvent: new Set(),
+          eventStates: [],
+          feedbackMessage: null, // { type: 'success'|'error', text: '' }
+          streak: 0,
+          sessionCorrect: 0,
+          sessionTotal: 0,
+          isTransitioning: false,
+          customPool: null // Used when practicing weak notes or exam mistakes
+        };
+
+        // Exam Mode State
+        this.examState = {
+          phase: 'setup', // 'setup' | 'running' | 'report'
+          level: 1,
+          questionCount: 10,
+          timedMode: true,
+          timeLeftSec: 180,
+          timerInterval: null,
+          startTime: 0,
+          elapsedSec: 0,
+          questions: [],
+          currentIndex: 0,
+          currentEventIdx: 0,
+          collectedNotesInEvent: new Set(),
+          eventStates: [],
+          userRecordedAnswers: [], // array of arrays
+          results: [], // { question, userAnswers, isCorrect }
+          isTransitioning: false
+        };
+
+        this.initPianoKeyboard();
+        this.bindKeyboardShortcuts();
+        this.handleInitialRoute();
+      }
+
+      // -------------------- PIANO KEYBOARD UI & INPUT --------------------
+      initPianoKeyboard() {
+        const container = document.getElementById('piano-keyboard');
+        if (!container) return;
+
+        const whiteKeys = PIANO_KEYS.filter(k => k.type === 'white');
+        const blackKeys = PIANO_KEYS.filter(k => k.type === 'black');
+
+        let html = `<div class="white-keys-row">`;
+
+        // Render White Keys
+        whiteKeys.forEach(k => {
+          const isMiddleC = k.note === 'C4';
+          html += `
+            <div 
+              id="pkey-${k.note.replace('#', 's')}" 
+              data-note="${k.note}"
+              class="piano-key-white"
+              onmousedown="app.handlePianoInput('${k.note}', event)"
+              ontouchstart="app.handlePianoInput('${k.note}', event)"
+            >
+              <div class="key-label-group flex flex-col items-center pointer-events-none transition-opacity duration-150">
+                ${isMiddleC ? '<span class="w-1.5 h-1.5 rounded-full bg-amber-classic mb-1"></span>' : ''}
+                <span class="text-[11px] font-bold text-charcoal-800">${k.note}</span>
+                <span class="text-[9px] text-charcoal-500 font-mono mt-0.5 bg-cream-200/80 px-1 rounded">${k.kbd}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        // Render Black Keys positioned over white keys
+        blackKeys.forEach(k => {
+          html += `
+            <div 
+              id="pkey-${k.note.replace('#', 's')}" 
+              data-note="${k.note}"
+              style="left: ${k.leftOffset}%;"
+              class="piano-key-black"
+              onmousedown="app.handlePianoInput('${k.note}', event)"
+              ontouchstart="app.handlePianoInput('${k.note}', event)"
+            >
+              <div class="key-label-group flex flex-col items-center pointer-events-none transition-opacity duration-150">
+                <span class="text-[9px] font-semibold text-cream-100">${k.note.replace('#', '♯')}</span>
+                <span class="text-[8px] text-cream-300 font-mono mt-0.5">${k.kbd}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        html += `</div>`;
+        container.innerHTML = html;
+      }
+
+      toggleKeyLabels(show) {
+        this.showKeyLabels = show;
+        const checkbox = document.getElementById('toggle-key-labels');
+        if (checkbox) checkbox.checked = show;
+
+        document.querySelectorAll('.key-label-group').forEach(el => {
+          el.style.opacity = show ? '1' : '0';
+        });
+      }
+
+      clearPianoHighlights() {
+        document.querySelectorAll('.piano-key-white, .piano-key-black').forEach(el => {
+          el.classList.remove('state-target', 'state-correct', 'state-wrong', 'active-press');
+        });
+      }
+
+      highlightPianoKeys(pitches, stateClass) {
+        pitches.forEach(p => {
+          const norm = normalizePitch(p);
+          const el = document.getElementById(`pkey-${norm.replace('#', 's')}`);
+          if (el) {
+            el.classList.add(stateClass);
+          }
+        });
+      }
+
+      flashKeyPress(pitch, tempStateClass = null) {
+        const norm = normalizePitch(pitch);
+        const el = document.getElementById(`pkey-${norm.replace('#', 's')}`);
+        if (!el) return;
+
+        el.classList.add('active-press');
+        if (tempStateClass) el.classList.add(tempStateClass);
+
+        setTimeout(() => {
+          el.classList.remove('active-press');
+          if (tempStateClass) {
+            setTimeout(() => el.classList.remove(tempStateClass), 350);
+          }
+        }, 160);
+      }
+
+      bindKeyboardShortcuts() {
+        const kbdMap = {};
+        PIANO_KEYS.forEach(k => {
+          kbdMap[k.kbd.toUpperCase()] = k.note;
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (e.repeat) return;
+          if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+
+          const keyChar = e.key.toUpperCase();
+          if (kbdMap[keyChar]) {
+            e.preventDefault();
+            this.handlePianoInput(kbdMap[keyChar]);
+          }
+        });
+      }
+
+      handlePianoInput(pitch, event) {
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        const normPitch = normalizePitch(pitch);
+        const meta = getKeyMeta(normPitch);
+
+        // Play audio & update status badge
+        this.sound.playNote(normPitch, 0.7);
+        this.flashKeyPress(normPitch);
+
+        const badge = document.getElementById('last-played-badge');
+        if (badge) {
+          badge.innerHTML = `剛彈奏：<strong class="text-amber-dark">${normPitch.replace('#', '♯')}</strong> (${meta.solfege} · ${meta.zh})`;
+        }
+
+        // Route input to active game mode
+        if (this.currentRoute === 'practice') {
+          this.evaluatePracticeInput(normPitch);
+        } else if (this.currentRoute === 'exam' && this.examState.phase === 'running') {
+          this.evaluateExamInput(normPitch);
+        }
+      }
+
+      // -------------------- NAVIGATION & MODALS --------------------
+      handleInitialRoute() {
+        const hash = window.location.hash.replace('#', '');
+        const validRoutes = ['curriculum', 'handbook', 'guided', 'practice', 'exam', 'analytics'];
+        if (validRoutes.includes(hash)) {
+          this.navigate(hash, true);
+        } else {
+          this.navigate('curriculum', true);
+        }
+
+        window.addEventListener('hashchange', () => {
+          const newHash = window.location.hash.replace('#', '');
+          if (validRoutes.includes(newHash) && newHash !== this.currentRoute) {
+            this.navigate(newHash, true);
+          }
+        });
+      }
+
+      navigate(route, skipConfirm = false) {
+        // Guard: Confirm before leaving an active Exam
+        if (!skipConfirm && this.currentRoute === 'exam' && this.examState.phase === 'running' && route !== 'exam') {
+          this.showConfirm(
+            '測驗進行中，確定要離開嗎？',
+            '您目前正在進行階段模擬測驗，切換分頁將會中斷本次作答進度且不予計分。',
+            () => {
+              this.stopExamTimer();
+              this.examState.phase = 'setup';
+              this.navigate(route, true);
+            }
+          );
+          return;
+        }
+
+        // Clean up active timers when switching away
+        this.stopGuidedPlayback();
+        this.stopHandbookDemo();
+        if (route !== 'practice') {
+          this.sound.stopMetronome();
+          this.practiceState.metronomeOn = false;
+        }
+
+        this.currentRoute = route;
+        window.location.hash = route;
+        this.clearPianoHighlights();
+
+        // Update Nav Styling
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+          const isActive = btn.dataset.route === route;
+          if (isActive) {
+            btn.classList.add('bg-charcoal-900', 'text-cream-50', 'shadow-xs');
+            btn.classList.remove('text-charcoal-700', 'hover:bg-cream-200/70');
+          } else {
+            btn.classList.remove('bg-charcoal-900', 'text-cream-50', 'shadow-xs');
+            btn.classList.add('text-charcoal-700', 'hover:bg-cream-200/70');
+          }
+        });
+
+        // Show/Hide Bottom Piano Dock
+        const pianoDock = document.getElementById('piano-dock');
+        if (['handbook', 'guided', 'practice', 'exam'].includes(route)) {
+          pianoDock.classList.remove('hidden');
+        } else {
+          pianoDock.classList.add('hidden');
+        }
+
+        // Render View
+        switch (route) {
+          case 'curriculum':
+            this.renderCurriculumView();
+            break;
+          case 'handbook':
+            this.renderHandbookView();
+            break;
+          case 'guided':
+            this.renderGuidedView();
+            break;
+          case 'practice':
+            if (!this.practiceState.currentQuestion) {
+              this.loadNextPracticeQuestion();
+            } else {
+              this.renderPracticeView();
+            }
+            break;
+          case 'exam':
+            this.renderExamView();
+            break;
+          case 'analytics':
+            this.renderAnalyticsView();
+            break;
+        }
+
+        lucide.createIcons();
+      }
+
+      showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const colors = {
+          info: 'bg-charcoal-900 text-cream-50 border-charcoal-700',
+          success: 'bg-feedback-success text-white border-feedback-success',
+          warning: 'bg-amber-dark text-white border-amber-classic'
+        };
+        toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs font-medium flex items-center gap-2 transition-all transform translate-y-0 opacity-100 ${colors[type] || colors.info}`;
+        toast.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+        container.appendChild(toast);
+        lucide.createIcons();
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-8px)';
+          setTimeout(() => toast.remove(), 250);
+        }, 2800);
+      }
+
+      showConfirm(title, message, onConfirm) {
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        modal.classList.remove('hidden');
+
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        const okBtn = document.getElementById('confirm-ok-btn');
+
+        const close = () => {
+          modal.classList.add('hidden');
+          cancelBtn.onclick = null;
+          okBtn.onclick = null;
+        };
+
+        cancelBtn.onclick = close;
+        okBtn.onclick = () => {
+          close();
+          onConfirm();
+        };
+      }
+
+      toggleShortcutModal(show) {
+        const modal = document.getElementById('shortcut-modal');
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+      }
+
+      toggleSound() {
+        this.sound.enabled = !this.sound.enabled;
+        const icon = document.getElementById('sound-icon');
+        const label = document.getElementById('sound-label');
+        if (this.sound.enabled) {
+          this.sound.unlock();
+          icon.setAttribute('data-lucide', 'volume-2');
+          label.textContent = '音效開啟';
+          this.showToast('鋼琴音源與節拍器音效已開啟');
+        } else {
+          icon.setAttribute('data-lucide', 'volume-x');
+          label.textContent = '已靜音';
+          this.showToast('已切換為靜音視覺模式');
+        }
+        lucide.createIcons();
+      }
+
+      toggleSettingsMenu() {
+        const menu = document.getElementById('settings-dropdown');
+        menu.classList.toggle('hidden');
+      }
+
+      unlockAllLevels() {
+        this.store.unlockAll();
+        document.getElementById('settings-dropdown').classList.add('hidden');
+        this.showToast('已解鎖全部 5 個學習關卡！', 'success');
+        if (this.currentRoute === 'curriculum') this.renderCurriculumView();
+      }
+
+      confirmResetProgress() {
+        document.getElementById('settings-dropdown').classList.add('hidden');
+        this.showConfirm(
+          '重置所有學習紀錄？',
+          '此操作將清除您所有的練習統計、關卡熟練度、錯題分析與測驗成績，且無法復原。',
+          () => {
+            this.store.reset();
+            this.showToast('學習進度已重置為初始狀態');
+            this.navigate('curriculum', true);
+          }
+        );
+      }
+
+      // -------------------- VIEW 1: CURRICULUM & LEVEL MAP --------------------
+      renderCurriculumView() {
+        const root = document.getElementById('app-root');
+        const unlocked = this.store.state.unlockedLevel;
+
+        // Find recommended next level
+        let recommendedLv = 1;
+        for (let i = 1; i <= 5; i++) {
+          if (i <= unlocked && this.store.getLevelMastery(i) < 85) {
+            recommendedLv = i;
+            break;
+          }
+          if (i === unlocked) recommendedLv = i;
+        }
+        const recData = CURRICULUM_DATA.find(c => c.level === recommendedLv);
+
+        const totalAttempted = Object.values(this.store.state.levelStats).reduce((s, v) => s + v.attempted, 0);
+        const totalCorrect = Object.values(this.store.state.levelStats).reduce((s, v) => s + v.correct, 0);
+        const overallAcc = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
+
+        let html = `
+          <div class="space-y-8">
+            <!-- Hero Banner & Recommended Next Step -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-cream-200 shadow-soft flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div class="space-y-3 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-light text-amber-dark text-xs font-semibold">
+                  <i data-lucide="compass" class="w-3.5 h-3.5"></i>
+                  系統化視譜進階課程 · Level 1 – Level 5
+                </div>
+                <h1 class="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
+                  從中央 C 啟蒙到演奏級大譜表視奏
+                </h1>
+                <p class="text-sm text-charcoal-600 leading-relaxed">
+                  結合標準五線譜即時渲染與聽覺回饋。建議先透過「互動範例」掌握指法與樂理拆解，再進入「隨堂練習」與「階段測驗」累積熟練度（達 70% 自動解鎖下一關）。
+                </p>
+                <div class="pt-2 flex flex-wrap items-center gap-3">
+                  <button onclick="app.startLevelGuided(${recommendedLv})" class="px-5 py-2.5 rounded-xl bg-charcoal-900 text-cream-50 text-sm font-medium hover:bg-charcoal-800 transition-all flex items-center gap-2 shadow-sm">
+                    <i data-lucide="play" class="w-4 h-4 text-amber-classic"></i>
+                    繼續推薦課程：${recData.code}
+                  </button>
+                  <button onclick="app.navigate('handbook')" class="px-4 py-2.5 rounded-xl bg-amber-light text-amber-dark border border-amber-classic/40 text-sm font-semibold hover:bg-amber-classic/20 transition-all flex items-center gap-1.5">
+                    <i data-lucide="library" class="w-4 h-4"></i>
+                    零基礎視譜樂理知識書
+                  </button>
+                  <button onclick="app.startLevelPractice(${recommendedLv})" class="px-4 py-2.5 rounded-xl bg-cream-100 text-charcoal-900 border border-cream-300 text-sm font-medium hover:bg-cream-200 transition-all">
+                    直接隨堂練習
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick Summary Stats -->
+              <div class="grid grid-cols-3 gap-3 sm:gap-4 shrink-0 bg-cream-50 p-4 rounded-2xl border border-cream-200">
+                <div class="text-center px-2">
+                  <p class="text-[11px] font-medium text-charcoal-500">已解鎖階段</p>
+                  <p class="text-xl sm:text-2xl font-bold text-charcoal-900 mt-1">${unlocked} <span class="text-xs font-normal text-charcoal-500">/ 5</span></p>
+                </div>
+                <div class="text-center px-2 border-x border-cream-200">
+                  <p class="text-[11px] font-medium text-charcoal-500">累計作答題數</p>
+                  <p class="text-xl sm:text-2xl font-bold text-charcoal-900 mt-1">${totalAttempted}</p>
+                </div>
+                <div class="text-center px-2">
+                  <p class="text-[11px] font-medium text-charcoal-500">平均視譜準確率</p>
+                  <p class="text-xl sm:text-2xl font-bold text-amber-dark mt-1">${overallAcc}%</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5 Level Cards Grid -->
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-charcoal-900 flex items-center gap-2">
+                  <i data-lucide="layers" class="w-5 h-5 text-amber-dark"></i>
+                  階段課程地圖
+                </h2>
+                ${unlocked < 5 ? `
+                  <button onclick="app.unlockAllLevels()" class="text-xs text-amber-dark hover:underline font-medium flex items-center gap-1">
+                    <i data-lucide="unlock" class="w-3.5 h-3.5"></i> 一鍵跳級解鎖全部關卡
+                  </button>
+                ` : '<span class="text-xs text-feedback-success font-medium">已解鎖全系列課程</span>'}
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        `;
+
+        CURRICULUM_DATA.forEach(item => {
+          const isUnlocked = item.level <= unlocked;
+          const mastery = this.store.getLevelMastery(item.level);
+          const accuracy = this.store.getLevelAccuracy(item.level);
+          const stats = this.store.state.levelStats[item.level];
+          const isCompleted = mastery >= 80;
+
+          html += `
+            <div class="rounded-2xl p-6 border transition-all flex flex-col justify-between ${
+              isUnlocked 
+                ? 'bg-white border-cream-200 shadow-card hover:shadow-soft hover:border-amber-classic/60' 
+                : 'bg-cream-100/70 border-cream-200 opacity-80'
+            }">
+              <div>
+                <!-- Header Row -->
+                <div class="flex items-center justify-between gap-2 mb-3">
+                  <span class="text-xs font-bold tracking-wider px-2.5 py-1 rounded-lg ${
+                    isUnlocked ? 'bg-charcoal-900 text-cream-50' : 'bg-cream-300 text-charcoal-700'
+                  }">${item.code} · ${item.badge}</span>
+                  
+                  ${isCompleted 
+                    ? `<span class="inline-flex items-center gap-1 text-xs font-semibold text-feedback-success bg-feedback-successBg px-2.5 py-1 rounded-full"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 已精通</span>`
+                    : isUnlocked
+                      ? `<span class="text-xs font-medium text-amber-dark bg-amber-light px-2.5 py-1 rounded-full">學習中</span>`
+                      : `<span class="inline-flex items-center gap-1 text-xs font-medium text-charcoal-500"><i data-lucide="lock" class="w-3.5 h-3.5"></i> 需前關達 70%</span>`
+                  }
+                </div>
+
+                <!-- Title & Subtitle -->
+                <h3 class="text-base font-bold text-charcoal-900">${item.title}</h3>
+                <p class="text-xs text-charcoal-500 mt-1">${item.subtitle}</p>
+
+                <!-- Learning Goals -->
+                <ul class="mt-4 space-y-1.5 border-t border-cream-100 pt-3">
+                  ${item.goals.map(g => `
+                    <li class="text-xs text-charcoal-700 flex items-start gap-2">
+                      <span class="w-1.5 h-1.5 rounded-full bg-amber-classic mt-1.5 shrink-0"></span>
+                      <span>${g}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+
+              <!-- Progress & Action Buttons -->
+              <div class="mt-6 pt-4 border-t border-cream-100">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <span class="text-charcoal-500">熟練度進度 (目標 70%)</span>
+                  <span class="font-bold text-charcoal-900">${mastery}% <span class="font-normal text-charcoal-500">(準確率 ${accuracy}%)</span></span>
+                </div>
+                <div class="w-full h-2 bg-cream-200 rounded-full overflow-hidden mb-4">
+                  <div class="h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-feedback-success' : 'bg-amber-classic'}" style="width: ${mastery}%"></div>
+                </div>
+
+                ${isUnlocked ? `
+                  <div class="grid grid-cols-3 gap-2">
+                    <button onclick="app.startLevelGuided(${item.level})" class="py-2 px-2 rounded-xl bg-cream-100 hover:bg-cream-200 text-charcoal-900 text-xs font-semibold transition-colors text-center">
+                      範例教學
+                    </button>
+                    <button onclick="app.startLevelPractice(${item.level})" class="py-2 px-2 rounded-xl bg-charcoal-900 hover:bg-charcoal-800 text-cream-50 text-xs font-semibold transition-colors text-center">
+                      隨堂練習
+                    </button>
+                    <button onclick="app.startLevelExam(${item.level})" class="py-2 px-2 rounded-xl bg-amber-light hover:bg-amber-classic/25 text-amber-dark text-xs font-semibold transition-colors text-center">
+                      階段測驗
+                    </button>
+                  </div>
+                ` : `
+                  <button onclick="app.unlockAllLevels()" class="w-full py-2 px-3 rounded-xl border border-cream-300 text-charcoal-600 hover:bg-white text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="key-round" class="w-3.5 h-3.5"></i> 跳級解鎖此關卡
+                  </button>
+                `}
+              </div>
+            </div>
+          `;
+        });
+
+        html += `</div></div></div>`;
+        root.innerHTML = html;
+      }
+
+      startLevelGuided(level) {
+        this.guidedState.level = level;
+        this.guidedState.exampleIdx = 0;
+        this.guidedState.stepIdx = -1;
+        this.navigate('guided');
+      }
+
+      startLevelPractice(level) {
+        this.practiceState.level = level;
+        this.practiceState.customPool = null;
+        this.loadNextPracticeQuestion();
+        this.navigate('practice');
+      }
+
+      startLevelExam(level) {
+        this.examState.level = level;
+        this.examState.phase = 'setup';
+        this.navigate('exam');
+      }
+
+      // -------------------- VIEW 1B: MUSIC THEORY HANDBOOK --------------------
+      renderHandbookView() {
+        const root = document.getElementById('app-root');
+        const st = this.handbookState;
+        const query = st.searchQuery.trim().toLowerCase();
+
+        // Filter chapters & entries when searching
+        let displayedChapters = HANDBOOK_CHAPTERS;
+        if (query) {
+          displayedChapters = HANDBOOK_CHAPTERS.map(ch => {
+            const matchedEntries = ch.entries.filter(ent =>
+              ent.title.toLowerCase().includes(query) ||
+              ent.summary.toLowerCase().includes(query) ||
+              ent.visualCue.toLowerCase().includes(query) ||
+              ent.details.some(d => d.toLowerCase().includes(query))
+            );
+            return { ...ch, entries: matchedEntries };
+          }).filter(ch => ch.entries.length > 0);
+        } else {
+          const activeCh = HANDBOOK_CHAPTERS.find(c => c.id === st.activeChapterId) || HANDBOOK_CHAPTERS[0];
+          displayedChapters = [activeCh];
+        }
+
+        root.innerHTML = `
+          <div class="space-y-6">
+            <!-- Handbook Header & Search Bar -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-cream-200 shadow-soft flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div class="space-y-2 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-light text-amber-dark text-xs font-semibold">
+                  <i data-lucide="library" class="w-3.5 h-3.5"></i>
+                  零基礎圖解樂理百科 · Interactive Notation Handbook
+                </div>
+                <h1 class="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900">
+                  鋼琴視譜樂理知識書
+                </h1>
+                <p class="text-xs sm:text-sm text-charcoal-600 leading-relaxed">
+                  完整解析五線譜位置、音符「空心 vs. 實心」與「符幹、尾巴、粗橫線」的拍數秘密、休止符與升降調號。點擊任一張樂譜卡片的「試聽示範」，即可同步聆聽節拍與琴鍵亮燈！
+                </p>
+              </div>
+
+              <!-- Quick Keyword Search -->
+              <div class="w-full lg:w-80 shrink-0">
+                <label class="block text-[11px] font-semibold text-charcoal-500 mb-1.5">快速搜尋樂理符號或名詞</label>
+                <div class="relative">
+                  <i data-lucide="search" class="w-4 h-4 text-charcoal-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                  <input 
+                    type="text" 
+                    id="handbook-search-input"
+                    value="${st.searchQuery.replace(/"/g, '&quot;')}"
+                    oninput="app.searchHandbook(this.value)"
+                    placeholder="搜尋：空心、符尾、休止符、附點、升記號..."
+                    class="w-full pl-10 pr-8 py-2.5 rounded-xl bg-cream-50 border border-cream-300 text-xs text-charcoal-900 focus:outline-none focus:border-amber-classic"
+                  />
+                  ${st.searchQuery ? `
+                    <button onclick="app.searchHandbook('')" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-charcoal-400 hover:text-charcoal-800">
+                      <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                  ` : ''}
+                </div>
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                  ${['空心', '符尾', '休止符', '附點', '升記號', '大譜表'].map(tag => `
+                    <button onclick="app.searchHandbook('${tag}')" class="text-[11px] px-2 py-0.5 rounded-md bg-cream-100 hover:bg-amber-light text-charcoal-700 hover:text-amber-dark transition-colors">
+                      #${tag}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Two-Column Layout: Left Chapter TOC + Right Illustrated Articles -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <!-- Left Sidebar: Chapter Navigation -->
+              <aside class="lg:col-span-4 bg-white rounded-3xl p-4 sm:p-5 border border-cream-200 shadow-card space-y-2 lg:sticky lg:top-20">
+                <div class="px-2 pb-2 border-b border-cream-100 flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase tracking-wider text-charcoal-500">知識書章節目錄</span>
+                  <span class="text-[11px] text-amber-dark font-semibold">共 5 大章節</span>
+                </div>
+                <div class="space-y-1.5 pt-1">
+                  ${HANDBOOK_CHAPTERS.map(ch => {
+                    const isSelected = !query && ch.id === st.activeChapterId;
+                    return `
+                      <button onclick="app.selectHandbookChapter('${ch.id}')" class="w-full text-left p-3 rounded-2xl transition-all flex items-start gap-3 ${
+                        isSelected 
+                          ? 'bg-charcoal-900 text-cream-50 shadow-xs' 
+                          : 'hover:bg-cream-100 text-charcoal-800'
+                      }">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                          isSelected ? 'bg-amber-classic text-white' : 'bg-cream-200/80 text-charcoal-700'
+                        }">
+                          <i data-lucide="${ch.icon}" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                          <div class="text-[11px] font-bold ${isSelected ? 'text-amber-classic' : 'text-amber-dark'}">${ch.number}</div>
+                          <div class="text-xs sm:text-sm font-bold truncate">${ch.title}</div>
+                          <div class="text-[11px] ${isSelected ? 'text-cream-300' : 'text-charcoal-500'} line-clamp-1 mt-0.5">${ch.subtitle}</div>
+                        </div>
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+
+                <!-- Quick Visual Cheat Sheet Box -->
+                <div class="mt-4 p-4 rounded-2xl bg-cream-50 border border-cream-200 space-y-2">
+                  <p class="text-xs font-bold text-charcoal-900 flex items-center gap-1.5">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-dark"></i> 30 秒速記口訣
+                  </p>
+                  <p class="text-[11px] text-charcoal-700 leading-relaxed">
+                    • <strong>空心</strong>是長音（2～4 拍），<strong>實心</strong>是短音（≤ 1 拍）。<br/>
+                    • 多一條<strong>直條</strong>減半，多一條<strong>尾巴/粗橫線</strong>再減半！<br/>
+                    • 右邊加<strong>小黑點（附點）</strong>＝ 延長原本一半拍數。
+                  </p>
+                </div>
+              </aside>
+
+              <!-- Right Content Area: Illustrated Theory Cards -->
+              <div class="lg:col-span-8 space-y-6">
+                ${displayedChapters.length === 0 ? `
+                  <div class="bg-white rounded-3xl p-10 border border-cream-200 text-center space-y-3">
+                    <i data-lucide="search-x" class="w-10 h-10 text-charcoal-400 mx-auto"></i>
+                    <h3 class="text-base font-bold text-charcoal-900">找不到符合「${st.searchQuery}」的樂理條目</h3>
+                    <p class="text-xs text-charcoal-500">請嘗試搜尋「空心」、「符尾」、「休止符」、「升降記號」或直接點選左側章節。</p>
+                    <button onclick="app.searchHandbook('')" class="px-4 py-2 rounded-xl bg-charcoal-900 text-cream-50 text-xs font-semibold">清除搜尋條件</button>
+                  </div>
+                ` : displayedChapters.map(ch => `
+                  <div class="space-y-5">
+                    <!-- Chapter Banner -->
+                    <div class="bg-white rounded-3xl p-6 border border-cream-200 shadow-card">
+                      <span class="text-xs font-bold text-amber-dark uppercase tracking-wider">${ch.number}</span>
+                      <h2 class="font-serif text-xl sm:text-2xl font-bold text-charcoal-900 mt-1">${ch.title}</h2>
+                      <p class="text-xs sm:text-sm text-charcoal-600 mt-2 leading-relaxed">${ch.intro}</p>
+                    </div>
+
+                    <!-- Chapter Entries -->
+                    ${ch.entries.map(entry => {
+                      const isPlayingThis = st.playingEntryId === entry.id;
+                      return `
+                        <article class="bg-white rounded-3xl p-6 sm:p-7 border border-cream-200 shadow-soft space-y-5">
+                          <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="px-3 py-1 rounded-full bg-amber-light text-amber-dark text-xs font-bold">${entry.badge}</span>
+                            <button onclick="app.playHandbookDemo('${entry.id}')" class="px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-xs ${
+                              isPlayingThis 
+                                ? 'bg-feedback-error text-white' 
+                                : 'bg-charcoal-900 hover:bg-charcoal-800 text-cream-50'
+                            }">
+                              <i data-lucide="${isPlayingThis ? 'square' : 'volume-2'}" class="w-3.5 h-3.5 text-amber-classic"></i>
+                              ${isPlayingThis ? '停止示範' : entry.demoLabel}
+                            </button>
+                          </div>
+
+                          <div>
+                            <h3 class="text-lg font-bold text-charcoal-900">${entry.title}</h3>
+                            <p class="text-xs sm:text-sm text-charcoal-600 mt-1.5 leading-relaxed">${entry.summary}</p>
+                          </div>
+
+                          <!-- Visual Cue Highlight Strip -->
+                          <div class="bg-amber-light/70 border border-amber-classic/30 rounded-2xl p-3.5 flex items-start gap-2.5">
+                            <i data-lucide="eye" class="w-4 h-4 text-amber-dark shrink-0 mt-0.5"></i>
+                            <p class="text-xs font-semibold text-charcoal-900 leading-relaxed">${entry.visualCue}</p>
+                          </div>
+
+                          <!-- Real VexFlow Rendered Sheet Diagram -->
+                          <div class="bg-cream-50/80 rounded-2xl border border-cream-200 p-4 vexflow-wrapper" id="hb-canvas-${entry.id}"></div>
+
+                          <!-- Detailed Bullet Explanations -->
+                          <ul class="space-y-2.5 pt-1">
+                            ${entry.details.map(detailHtml => `
+                              <li class="text-xs sm:text-sm text-charcoal-700 leading-relaxed flex items-start gap-2.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-classic mt-2 shrink-0"></span>
+                                <span>${detailHtml}</span>
+                              </li>
+                            `).join('')}
+                          </ul>
+                        </article>
+                      `;
+                    }).join('')}
+                  </div>
+                `).join('')}
+
+                <!-- Bottom Next Step CTA -->
+                <div class="bg-charcoal-900 text-cream-50 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <h4 class="text-base font-bold">看懂音符符號與拍數了嗎？</h4>
+                    <p class="text-xs text-cream-300 mt-1">立即前往隨堂練習，在真實五線譜與鋼琴鍵盤上驗證你的視譜直覺！</p>
+                  </div>
+                  <button onclick="app.navigate('practice')" class="shrink-0 px-5 py-2.5 rounded-xl bg-amber-classic hover:bg-amber-dark text-white text-xs font-bold transition-colors flex items-center gap-2">
+                    開始隨堂練習 <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Render VexFlow diagrams for all visible entries
+        displayedChapters.forEach(ch => {
+          ch.entries.forEach(entry => {
+            if (entry.scoreConfig) {
+              this.renderer.render(`hb-canvas-${entry.id}`, entry.scoreConfig);
+            }
+          });
+        });
+      }
+
+      selectHandbookChapter(chapterId) {
+        this.stopHandbookDemo();
+        this.handbookState.searchQuery = '';
+        this.handbookState.activeChapterId = chapterId;
+        this.renderHandbookView();
+        lucide.createIcons();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      searchHandbook(query) {
+        this.stopHandbookDemo();
+        this.handbookState.searchQuery = query;
+        this.renderHandbookView();
+        lucide.createIcons();
+        const input = document.getElementById('handbook-search-input');
+        if (input) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      }
+
+      playHandbookDemo(entryId) {
+        if (this.handbookState.playingEntryId === entryId) {
+          this.stopHandbookDemo();
+          this.renderHandbookView();
+          lucide.createIcons();
+          return;
+        }
+
+        this.stopHandbookDemo();
+
+        let targetEntry = null;
+        for (const ch of HANDBOOK_CHAPTERS) {
+          const found = ch.entries.find(e => e.id === entryId);
+          if (found) {
+            targetEntry = found;
+            break;
+          }
+        }
+        if (!targetEntry || !targetEntry.demoSequence) return;
+
+        this.handbookState.playingEntryId = entryId;
+        this.renderHandbookView();
+        lucide.createIcons();
+
+        const bpm = 76;
+        const beatMs = (60 / bpm) * 1000;
+        let accumulatedMs = 0;
+
+        targetEntry.demoSequence.forEach((step) => {
+          const durMs = step.beats * beatMs;
+          const timerId = setTimeout(() => {
+            this.clearPianoHighlights();
+            if (step.keys && step.keys.length > 0) {
+              this.sound.playChord(step.keys, Math.max(0.3, (durMs / 1000) * 0.92));
+              this.highlightPianoKeys(step.keys, 'state-target');
+            } else if (step.clickRest) {
+              // Play subtle metronome click during rest so user feels the silent beats
+              const beatCount = Math.max(1, Math.round(step.beats));
+              for (let b = 0; b < beatCount; b++) {
+                const restTickTimer = setTimeout(() => {
+                  this.sound.playClick(b === 0);
+                }, b * beatMs);
+                this.handbookState.demoTimers.push(restTickTimer);
+              }
+            }
+          }, accumulatedMs);
+
+          this.handbookState.demoTimers.push(timerId);
+          accumulatedMs += durMs;
+        });
+
+        const endTimer = setTimeout(() => {
+          this.stopHandbookDemo();
+          if (this.currentRoute === 'handbook') {
+            this.renderHandbookView();
+            lucide.createIcons();
+          }
+        }, accumulatedMs + 250);
+        this.handbookState.demoTimers.push(endTimer);
+      }
+
+      stopHandbookDemo() {
+        this.handbookState.demoTimers.forEach(id => clearTimeout(id));
+        this.handbookState.demoTimers = [];
+        this.handbookState.playingEntryId = null;
+        this.clearPianoHighlights();
+      }
+
+      // -------------------- VIEW 2: GUIDED EXAMPLES --------------------
+      renderGuidedView() {
+        const root = document.getElementById('app-root');
+        const levelData = CURRICULUM_DATA.find(c => c.level === this.guidedState.level) || CURRICULUM_DATA[0];
+        const example = levelData.guidedExamples[this.guidedState.exampleIdx] || levelData.guidedExamples[0];
+        const currentStepIdx = this.guidedState.stepIdx;
+        const activeStep = currentStepIdx >= 0 ? example.steps[currentStepIdx] : null;
+
+        const eventStates = example.steps.map((_, idx) => idx === currentStepIdx ? 'active' : 'default');
+
+        root.innerHTML = `
+          <div class="space-y-6">
+            <!-- Top Level & Example Selector Bar -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-cream-200 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-charcoal-500 mr-1">選擇課程階段：</span>
+                ${CURRICULUM_DATA.map(c => `
+                  <button onclick="app.selectGuidedLevel(${c.level})" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    c.level === this.guidedState.level 
+                      ? 'bg-charcoal-900 text-cream-50' 
+                      : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200'
+                  }">${c.code}</button>
+                `).join('')}
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-charcoal-500">示範樂句：</span>
+                ${levelData.guidedExamples.map((ex, idx) => `
+                  <button onclick="app.selectGuidedExample(${idx})" class="px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+                    idx === this.guidedState.exampleIdx
+                      ? 'bg-amber-light border-amber-classic text-amber-dark font-semibold'
+                      : 'bg-white border-cream-200 text-charcoal-700 hover:bg-cream-100'
+                  }">範例 ${idx + 1}</button>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Main Guided Teaching Workspace -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <!-- Left 7 Cols: Sheet Music & Playback Controls -->
+              <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-cream-200 shadow-soft flex flex-col justify-between">
+                <div>
+                  <div class="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-amber-dark">${levelData.title}</span>
+                      <h2 class="text-lg sm:text-xl font-bold text-charcoal-900 mt-0.5">${example.title}</h2>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs bg-cream-100 px-3 py-1.5 rounded-xl border border-cream-200 shrink-0">
+                      <span class="font-semibold text-charcoal-800">${example.keySignature} 大調</span>
+                      <span class="text-cream-300">|</span>
+                      <span class="font-mono text-charcoal-700">${example.timeSignature} 拍</span>
+                    </div>
+                  </div>
+
+                  <p class="text-xs sm:text-sm text-charcoal-600 bg-cream-50 p-3.5 rounded-xl border border-cream-200/80 mb-5 leading-relaxed">
+                    ${example.summary}
+                  </p>
+
+                  <!-- VexFlow Canvas -->
+                  <div class="bg-cream-50/60 rounded-2xl border border-cream-200 p-4 vexflow-wrapper" id="guided-sheet-canvas"></div>
+                </div>
+
+                <!-- Playback & Stepper Transport Controls -->
+                <div class="mt-6 pt-4 border-t border-cream-100 flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-2">
+                    <button onclick="app.toggleGuidedPlay()" class="px-4 py-2.5 rounded-xl ${
+                      this.guidedState.isPlaying ? 'bg-feedback-error text-white' : 'bg-charcoal-900 text-cream-50'
+                    } text-xs font-semibold flex items-center gap-2 hover:opacity-95 transition-all shadow-xs">
+                      <i data-lucide="${this.guidedState.isPlaying ? 'square' : 'play'}" class="w-4 h-4"></i>
+                      ${this.guidedState.isPlaying ? '停止示範播放' : `示範播放 (${example.bpm} BPM)`}
+                    </button>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button onclick="app.stepGuided(-1)" class="px-3 py-2 rounded-xl bg-cream-100 hover:bg-cream-200 text-charcoal-800 text-xs font-semibold flex items-center gap-1">
+                      <i data-lucide="chevron-left" class="w-4 h-4"></i> 上一音
+                    </button>
+                    <span class="text-xs font-mono text-charcoal-600 px-2">
+                      ${currentStepIdx >= 0 ? `第 ${currentStepIdx + 1} / ${example.steps.length} 步` : `共 ${example.steps.length} 個音符事件`}
+                    </span>
+                    <button onclick="app.stepGuided(1)" class="px-3 py-2 rounded-xl bg-amber-light hover:bg-amber-classic/25 text-amber-dark text-xs font-semibold flex items-center gap-1">
+                      逐步拆解 <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right 5 Cols: Step-by-Step Theory & Fingering Breakdown -->
+              <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-cream-200 shadow-soft flex flex-col justify-between">
+                <div>
+                  <h3 class="text-base font-bold text-charcoal-900 flex items-center gap-2 pb-3 border-b border-cream-100">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-dark"></i>
+                    逐音拆解與指法解析
+                  </h3>
+
+                  ${activeStep ? `
+                    <div class="mt-4 space-y-4">
+                      <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-cream-50 p-3.5 rounded-2xl border border-cream-200">
+                          <span class="text-[11px] text-charcoal-500 block">目標音高 / 唱名</span>
+                          <span class="text-lg font-bold text-amber-dark mt-0.5 block">
+                            ${activeStep.keys.map(k => k.replace('#', '♯')).join(' + ')}
+                          </span>
+                          <span class="text-xs text-charcoal-600">
+                            (${activeStep.keys.map(k => getKeyMeta(k).solfege).join(' - ')})
+                          </span>
+                        </div>
+                        <div class="bg-cream-50 p-3.5 rounded-2xl border border-cream-200">
+                          <span class="text-[11px] text-charcoal-500 block">建議彈奏指法</span>
+                          <span class="text-sm font-bold text-charcoal-900 mt-1 block">${activeStep.finger}</span>
+                          <span class="text-xs text-charcoal-500 mt-0.5 block">${activeStep.count}</span>
+                        </div>
+                      </div>
+
+                      <div class="bg-amber-light/60 p-4 rounded-2xl border border-amber-classic/30">
+                        <span class="text-xs font-bold text-amber-dark flex items-center gap-1.5 mb-1.5">
+                          <i data-lucide="lightbulb" class="w-4 h-4"></i> 視譜關鍵解析
+                        </span>
+                        <p class="text-xs sm:text-sm text-charcoal-800 leading-relaxed">${activeStep.theory}</p>
+                      </div>
+                    </div>
+                  ` : `
+                    <div class="mt-5 text-center py-8 px-4 bg-cream-50 rounded-2xl border border-dashed border-cream-300">
+                      <i data-lucide="mouse-pointer-click" class="w-8 h-8 text-amber-classic mx-auto mb-2"></i>
+                      <p class="text-sm font-semibold text-charcoal-800">點擊「示範播放」或「逐步拆解」</p>
+                      <p class="text-xs text-charcoal-500 mt-1 leading-relaxed">
+                        五線譜上的當前音符與下方鋼琴鍵盤將會同步亮起，並顯示對應的唱名、建議指法與節奏數拍說明。
+                      </p>
+                    </div>
+                  `}
+
+                  <!-- All Steps Quick Pills -->
+                  <div class="mt-5">
+                    <span class="text-[11px] font-semibold text-charcoal-500 block mb-2">快速點選樂句音符：</span>
+                    <div class="flex flex-wrap gap-1.5">
+                      ${example.steps.map((st, idx) => `
+                        <button onclick="app.jumpGuidedStep(${idx})" class="px-2.5 py-1.5 rounded-lg text-xs font-mono border transition-all ${
+                          idx === currentStepIdx 
+                            ? 'bg-amber-classic text-white border-amber-classic font-bold' 
+                            : 'bg-cream-50 text-charcoal-800 border-cream-200 hover:border-amber-classic'
+                        }">
+                          ${idx + 1}. ${st.keys.join('+').replace(/#/g, '♯')}
+                        </button>
+                      `).join('')}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-cream-100 flex justify-end">
+                  <button onclick="app.startLevelPractice(${this.guidedState.level})" class="w-full py-2.5 px-4 rounded-xl bg-charcoal-900 hover:bg-charcoal-800 text-cream-50 text-xs font-semibold flex items-center justify-center gap-2 transition-colors">
+                    已看懂示範，前往 Level ${this.guidedState.level} 隨堂練習 <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Render VexFlow
+        this.renderer.render('guided-sheet-canvas', {
+          clef: example.clef,
+          keySignature: example.keySignature,
+          timeSignature: example.timeSignature,
+          events: example.steps.map(s => ({ keys: s.keys, duration: s.duration })),
+          eventStates
+        });
+
+        // Sync Piano Keyboard Highlight
+        this.clearPianoHighlights();
+        if (activeStep) {
+          this.highlightPianoKeys(activeStep.keys, 'state-target');
+        }
+      }
+
+      selectGuidedLevel(level) {
+        this.stopGuidedPlayback();
+        this.guidedState.level = level;
+        this.guidedState.exampleIdx = 0;
+        this.guidedState.stepIdx = -1;
+        this.renderGuidedView();
+        lucide.createIcons();
+      }
+
+      selectGuidedExample(idx) {
+        this.stopGuidedPlayback();
+        this.guidedState.exampleIdx = idx;
+        this.guidedState.stepIdx = -1;
+        this.renderGuidedView();
+        lucide.createIcons();
+      }
+
+      jumpGuidedStep(idx) {
+        this.stopGuidedPlayback();
+        const levelData = CURRICULUM_DATA.find(c => c.level === this.guidedState.level);
+        const example = levelData.guidedExamples[this.guidedState.exampleIdx];
+        if (!example || !example.steps[idx]) return;
+
+        this.guidedState.stepIdx = idx;
+        this.sound.playChord(example.steps[idx].keys, 0.8);
+        this.renderGuidedView();
+        lucide.createIcons();
+      }
+
+      stepGuided(delta) {
+        this.stopGuidedPlayback();
+        const levelData = CURRICULUM_DATA.find(c => c.level === this.guidedState.level);
+        const example = levelData.guidedExamples[this.guidedState.exampleIdx];
+        let next = this.guidedState.stepIdx + delta;
+        if (next < 0) next = 0;
+        if (next >= example.steps.length) next = 0;
+        this.jumpGuidedStep(next);
+      }
+
+      toggleGuidedPlay() {
+        if (this.guidedState.isPlaying) {
+          this.stopGuidedPlayback();
+          this.renderGuidedView();
+          lucide.createIcons();
+          return;
+        }
+
+        const levelData = CURRICULUM_DATA.find(c => c.level === this.guidedState.level);
+        const example = levelData.guidedExamples[this.guidedState.exampleIdx];
+        this.guidedState.isPlaying = true;
+        let idx = 0;
+
+        const playNext = () => {
+          if (!this.guidedState.isPlaying) return;
+          if (idx >= example.steps.length) {
+            this.stopGuidedPlayback();
+            this.renderGuidedView();
+            lucide.createIcons();
+            return;
+          }
+
+          this.guidedState.stepIdx = idx;
+          const step = example.steps[idx];
+          this.sound.playChord(step.keys, 0.75);
+          this.renderGuidedView();
+          lucide.createIcons();
+
+          const beatMs = (60 / example.bpm) * 1000;
+          const durFactor = step.duration === 'w' ? 2.2 : step.duration === 'h' || step.duration === 'hd' ? 1.5 : step.duration === '8' ? 0.65 : 1;
+          idx++;
+          this.guidedState.playTimer = setTimeout(playNext, beatMs * durFactor);
+        };
+
+        playNext();
+      }
+
+      stopGuidedPlayback() {
+        this.guidedState.isPlaying = false;
+        if (this.guidedState.playTimer) {
+          clearTimeout(this.guidedState.playTimer);
+          this.guidedState.playTimer = null;
+        }
+      }
+
+      // -------------------- VIEW 3: PRACTICE MODE --------------------
+      loadNextPracticeQuestion(avoidId = null) {
+        const pool = this.practiceState.customPool || 
+          (CURRICULUM_DATA.find(c => c.level === this.practiceState.level) || CURRICULUM_DATA[0]).questions;
+
+        let candidates = pool.filter(q => q.id !== avoidId);
+        if (candidates.length === 0) candidates = pool;
+
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        this.practiceState.currentQuestion = chosen;
+        this.practiceState.currentEventIdx = 0;
+        this.practiceState.collectedNotesInEvent = new Set();
+        this.practiceState.eventStates = chosen.events.map((_, idx) => idx === 0 ? 'active' : 'default');
+        this.practiceState.feedbackMessage = null;
+        this.practiceState.isTransitioning = false;
+
+        if (this.currentRoute === 'practice') {
+          this.renderPracticeView();
+          lucide.createIcons();
+        }
+      }
+
+      renderPracticeView() {
+        const root = document.getElementById('app-root');
+        const st = this.practiceState;
+        const q = st.currentQuestion;
+        if (!q) return;
+
+        const activeEvent = q.events[st.currentEventIdx];
+        const acc = st.sessionTotal > 0 ? Math.round((st.sessionCorrect / st.sessionTotal) * 100) : 100;
+
+        root.innerHTML = `
+          <div class="space-y-6">
+            <!-- Practice Control Bar -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-cream-200 shadow-card flex flex-wrap items-center justify-between gap-4">
+              <!-- Level Selector -->
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs font-semibold text-charcoal-500 mr-1">練習難度：</span>
+                ${CURRICULUM_DATA.map(c => `
+                  <button onclick="app.changePracticeLevel(${c.level})" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    !st.customPool && c.level === st.level
+                      ? 'bg-charcoal-900 text-cream-50'
+                      : 'bg-cream-100 text-charcoal-700 hover:bg-cream-200'
+                  }">${c.code}</button>
+                `).join('')}
+                ${st.customPool ? `<span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-light text-amber-dark border border-amber-classic">錯題/弱點特訓模式</span>` : ''}
+              </div>
+
+              <!-- Metronome & Hint Controls -->
+              <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                <!-- Metronome Control -->
+                <div class="flex items-center gap-2 bg-cream-50 px-3 py-1.5 rounded-xl border border-cream-200">
+                  <button onclick="app.togglePracticeMetronome()" class="flex items-center gap-1.5 text-xs font-semibold ${
+                    st.metronomeOn ? 'text-amber-dark' : 'text-charcoal-700'
+                  }">
+                    <span id="metronome-led" class="w-2.5 h-2.5 rounded-full ${st.metronomeOn ? 'bg-amber-classic' : 'bg-cream-300'}"></span>
+                    節拍器
+                  </button>
+                  <input type="range" min="40" max="160" value="${st.bpm}" oninput="app.updatePracticeBpm(this.value)" class="w-20 accent-amber-classic cursor-pointer">
+                  <span id="practice-bpm-label" class="text-xs font-mono text-charcoal-700 w-14">${st.bpm} BPM</span>
+                </div>
+
+                <!-- Visual Hint Switch -->
+                <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs font-medium text-charcoal-700 bg-cream-50 px-3 py-1.5 rounded-xl border border-cream-200">
+                  <input type="checkbox" ${st.showHints ? 'checked' : ''} onchange="app.togglePracticeHints(this.checked)" class="rounded accent-amber-classic">
+                  <span>顯示視譜提示</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Main Practice Sheet Card -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-cream-200 shadow-soft">
+              <!-- Status Header -->
+              <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-cream-100">
+                <div class="flex items-center gap-2.5">
+                  <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-light text-amber-dark">${q.category}</span>
+                  <span class="text-xs text-charcoal-500">
+                    ${q.clef === 'treble' ? '高音譜號' : q.clef === 'bass' ? '低音譜號' : '大譜表 (雙手)'} · ${q.keySignature} 大調
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs">
+                  <span class="text-charcoal-600">連續答對：<strong class="text-amber-dark text-sm">${st.streak}</strong> 🔥</span>
+                  <span class="text-charcoal-600">本次正確率：<strong class="text-charcoal-900 text-sm">${acc}%</strong> (${st.sessionCorrect}/${st.sessionTotal})</span>
+                </div>
+              </div>
+
+              <!-- Sheet Music Display -->
+              <div class="my-6 bg-cream-50/70 rounded-2xl border border-cream-200 p-4 sm:p-6 vexflow-wrapper" id="practice-sheet-canvas"></div>
+
+              <!-- Prompt & Instant Feedback Area -->
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-cream-50 p-4 rounded-2xl border border-cream-200">
+                <div class="space-y-1 text-center sm:text-left">
+                  <p class="text-sm font-bold text-charcoal-900">
+                    請彈奏高亮音符（第 ${st.currentEventIdx + 1} / ${q.events.length} 組）
+                    ${activeEvent && activeEvent.keys.length > 1 ? `<span class="text-xs font-normal text-amber-dark ml-1">· 需按下 ${activeEvent.keys.length} 個和弦音</span>` : ''}
+                  </p>
+                  ${st.showHints ? `
+                    <p class="text-xs text-charcoal-600 flex items-center justify-center sm:justify-start gap-1.5">
+                      <i data-lucide="help-circle" class="w-3.5 h-3.5 text-amber-classic"></i>
+                      提示：${q.hint}
+                    </p>
+                  ` : `<p class="text-xs text-charcoal-400">已隱藏文字提示（盲測訓練中）</p>`}
+                </div>
+
+                <!-- Feedback Pill or Skip Button -->
+                <div class="flex items-center gap-2.5">
+                  ${st.feedbackMessage ? `
+                    <div class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                      st.feedbackMessage.type === 'success' 
+                        ? 'bg-feedback-successBg text-feedback-success border border-feedback-success/30' 
+                        : 'bg-feedback-errorBg text-feedback-error border border-feedback-error/30'
+                    }">
+                      <i data-lucide="${st.feedbackMessage.type === 'success' ? 'check-circle' : 'x-circle'}" class="w-4 h-4"></i>
+                      <span>${st.feedbackMessage.text}</span>
+                    </div>
+                  ` : ''}
+                  <button onclick="app.loadNextPracticeQuestion('${q.id}')" class="px-3.5 py-2 rounded-xl bg-white border border-cream-300 hover:bg-cream-100 text-charcoal-700 text-xs font-medium transition-colors">
+                    換一題
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Render VexFlow
+        this.renderer.render('practice-sheet-canvas', {
+          clef: q.clef,
+          keySignature: q.keySignature,
+          timeSignature: q.timeSignature,
+          events: q.events,
+          eventStates: st.eventStates
+        });
+
+        // Update Piano Key Target Highlights if hints enabled
+        this.clearPianoHighlights();
+        if (st.showHints && activeEvent) {
+          this.highlightPianoKeys(activeEvent.keys, 'state-target');
+        }
+        // Keep already collected notes in multi-note chord green
+        if (st.collectedNotesInEvent.size > 0) {
+          this.highlightPianoKeys(Array.from(st.collectedNotesInEvent), 'state-correct');
+        }
+      }
+
+      changePracticeLevel(level) {
+        this.practiceState.level = level;
+        this.practiceState.customPool = null;
+        this.loadNextPracticeQuestion();
+      }
+
+      togglePracticeHints(show) {
+        this.practiceState.showHints = show;
+        this.renderPracticeView();
+        lucide.createIcons();
+      }
+
+      togglePracticeMetronome() {
+        this.practiceState.metronomeOn = !this.practiceState.metronomeOn;
+        if (this.practiceState.metronomeOn) {
+          this.sound.startMetronome(this.practiceState.bpm, (beat) => {
+            const led = document.getElementById('metronome-led');
+            if (led) {
+              led.classList.remove('beat-active');
+              void led.offsetWidth;
+              led.classList.add('beat-active');
+              led.style.backgroundColor = beat === 0 ? '#B83A3A' : '#C68B59';
+            }
+          });
+        } else {
+          this.sound.stopMetronome();
+        }
+        this.renderPracticeView();
+        lucide.createIcons();
+      }
+
+      updatePracticeBpm(val) {
+        this.practiceState.bpm = Number(val);
+        const label = document.getElementById('practice-bpm-label');
+        if (label) label.textContent = `${val} BPM`;
+        this.sound.updateBpm(Number(val));
+      }
+
+      evaluatePracticeInput(playedPitch) {
+        const st = this.practiceState;
+        if (st.isTransitioning || !st.currentQuestion) return;
+
+        const q = st.currentQuestion;
+        const targetEvent = q.events[st.currentEventIdx];
+        const normalizedTargets = targetEvent.keys.map(k => normalizePitch(k));
+
+        if (normalizedTargets.includes(playedPitch)) {
+          // Correct note hit!
+          st.collectedNotesInEvent.add(playedPitch);
+          this.highlightPianoKeys([playedPitch], 'state-correct');
+
+          // Check if all notes in current event (single note or chord) are satisfied
+          const allSatisfied = normalizedTargets.every(t => st.collectedNotesInEvent.has(t));
+          if (allSatisfied) {
+            this.sound.playFeedback('correct');
+            st.eventStates[st.currentEventIdx] = 'correct';
+            st.collectedNotesInEvent.clear();
+
+            if (st.currentEventIdx + 1 < q.events.length) {
+              // Advance to next note in phrase
+              st.currentEventIdx += 1;
+              st.eventStates[st.currentEventIdx] = 'active';
+              st.feedbackMessage = { type: 'success', text: '正確！請繼續彈奏下一個音' };
+              this.renderPracticeView();
+              lucide.createIcons();
+            } else {
+              // Completed entire question!
+              st.isTransitioning = true;
+              st.streak += 1;
+              st.sessionCorrect += 1;
+              st.sessionTotal += 1;
+              st.feedbackMessage = { type: 'success', text: '完美通過！自動載入下一題...' };
+
+              this.store.recordAttempt({
+                level: this.practiceState.level,
+                clef: q.clef,
+                targetKeys: targetEvent.keys,
+                isCorrect: true,
+                category: q.category
+              });
+
+              this.renderPracticeView();
+              lucide.createIcons();
+
+              setTimeout(() => {
+                this.loadNextPracticeQuestion(q.id);
+              }, 750);
+            }
+          }
+        } else {
+          // Wrong note hit!
+          this.sound.playFeedback('wrong');
+          this.flashKeyPress(playedPitch, 'state-wrong');
+          st.streak = 0;
+          st.sessionTotal += 1;
+          st.eventStates[st.currentEventIdx] = 'wrong';
+
+          const correctDisplay = targetEvent.keys.map(k => k.replace('#', '♯')).join(' + ');
+          st.feedbackMessage = {
+            type: 'error',
+            text: `彈成了 ${playedPitch.replace('#', '♯')}，正確音高為 ${correctDisplay}`
+          };
+
+          // Highlight correct keys on piano so user learns immediately
+          this.highlightPianoKeys(targetEvent.keys, 'state-target');
+
+          this.store.recordAttempt({
+            level: this.practiceState.level,
+            clef: q.clef,
+            targetKeys: targetEvent.keys,
+            isCorrect: false,
+            category: q.category
+          });
+
+          this.renderPracticeView();
+          lucide.createIcons();
+        }
+      }
+
+      // -------------------- VIEW 4: EXAM / ASSESSMENT MODE --------------------
+      renderExamView() {
+        const root = document.getElementById('app-root');
+        const ex = this.examState;
+
+        if (ex.phase === 'setup') {
+          root.innerHTML = `
+            <div class="max-w-2xl mx-auto bg-white rounded-3xl p-6 sm:p-8 border border-cream-200 shadow-soft space-y-6">
+              <div class="flex items-center gap-3 pb-4 border-b border-cream-100">
+                <div class="w-11 h-11 rounded-2xl bg-amber-light text-amber-dark flex items-center justify-center">
+                  <i data-lucide="award" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h2 class="text-xl font-bold text-charcoal-900">階段視譜模擬測驗</h2>
+                  <p class="text-xs text-charcoal-500 mt-0.5">測驗期間將自動關閉琴鍵提示，測驗結束產出完整錯題診斷報告</p>
+                </div>
+              </div>
+
+              <!-- Config Form -->
+              <div class="space-y-5">
+                <div>
+                  <label class="block text-xs font-bold text-charcoal-800 mb-2">1. 選擇測驗關卡級別</label>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    ${CURRICULUM_DATA.map(c => `
+                      <button onclick="app.setExamConfig('level', ${c.level})" class="p-3 rounded-xl border text-left transition-all ${
+                        ex.level === c.level 
+                          ? 'bg-charcoal-900 text-cream-50 border-charcoal-900 shadow-xs' 
+                          : 'bg-cream-50 text-charcoal-800 border-cream-200 hover:border-amber-classic'
+                      }">
+                        <div class="text-xs font-bold">${c.code} · ${c.badge}</div>
+                        <div class="text-[11px] opacity-80 mt-0.5 truncate">${c.title}</div>
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-charcoal-800 mb-2">2. 測驗題數設定</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      ${[10, 15].map(num => `
+                        <button onclick="app.setExamConfig('questionCount', ${num})" class="py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                          ex.questionCount === num 
+                            ? 'bg-amber-light border-amber-classic text-amber-dark' 
+                            : 'bg-white border-cream-200 text-charcoal-700'
+                        }">${num} 題標準卷</button>
+                      `).join('')}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-charcoal-800 mb-2">3. 計時模式</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button onclick="app.setExamConfig('timedMode', true)" class="py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                        ex.timedMode ? 'bg-amber-light border-amber-classic text-amber-dark' : 'bg-white border-cream-200 text-charcoal-700'
+                      }">限時挑戰 (3分鐘)</button>
+                      <button onclick="app.setExamConfig('timedMode', false)" class="py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                        !ex.timedMode ? 'bg-amber-light border-amber-classic text-amber-dark' : 'bg-white border-cream-200 text-charcoal-700'
+                      }">不限時專注</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-cream-50 p-4 rounded-2xl border border-cream-200 text-xs text-charcoal-600 space-y-1">
+                  <p class="font-semibold text-charcoal-800">評分與通過標準：</p>
+                  <p>• 總分達 <strong>80% 以上</strong> 視為通過該階段檢定，並自動解鎖下一級別。</p>
+                  <p>• 測驗中請直接點擊下方鋼琴鍵盤或使用電腦鍵盤作答。</p>
+                </div>
+
+                <button onclick="app.startExam()" class="w-full py-3.5 rounded-2xl bg-charcoal-900 hover:bg-charcoal-800 text-cream-50 text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2">
+                  <i data-lucide="play-circle" class="w-5 h-5 text-amber-classic"></i>
+                  開始正式測驗
+                </button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        if (ex.phase === 'running') {
+          const q = ex.questions[ex.currentIndex];
+          const progressPct = Math.round(((ex.currentIndex) / ex.questions.length) * 100);
+          const mins = String(Math.floor(ex.timeLeftSec / 60)).padStart(2, '0');
+          const secs = String(ex.timeLeftSec % 60).padStart(2, '0');
+
+          root.innerHTML = `
+            <div class="space-y-6">
+              <!-- Exam Top Progress Header -->
+              <div class="bg-white rounded-2xl p-4 sm:p-5 border border-cream-200 shadow-card">
+                <div class="flex items-center justify-between gap-4 mb-3">
+                  <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 rounded-lg bg-charcoal-900 text-cream-50 text-xs font-bold">
+                      題目 ${ex.currentIndex + 1} / ${ex.questions.length}
+                    </span>
+                    <span class="text-xs font-semibold text-charcoal-700">${q.category}</span>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    ${ex.timedMode ? `
+                      <div id="exam-timer-badge" class="px-3 py-1 rounded-xl bg-amber-light text-amber-dark font-mono text-xs font-bold flex items-center gap-1.5">
+                        <i data-lucide="timer" class="w-4 h-4"></i>
+                        <span>${mins}:${secs}</span>
+                      </div>
+                    ` : `<span class="text-xs text-charcoal-500">不限時模式</span>`}
+                    <button onclick="app.abortExam()" class="text-xs text-charcoal-500 hover:text-feedback-error underline">放棄測驗</button>
+                  </div>
+                </div>
+                <div class="w-full h-2 bg-cream-200 rounded-full overflow-hidden">
+                  <div class="h-full bg-amber-classic transition-all duration-300" style="width: ${progressPct}%"></div>
+                </div>
+              </div>
+
+              <!-- Exam Sheet Area -->
+              <div class="bg-white rounded-3xl p-6 sm:p-8 border border-cream-200 shadow-soft text-center">
+                <p class="text-xs font-semibold uppercase tracking-wider text-charcoal-500 mb-4">
+                  請視譜並彈奏出下方樂譜中的音符（測驗模式已隱藏琴鍵提示）
+                </p>
+                <div class="bg-cream-50/70 rounded-2xl border border-cream-200 p-4 sm:p-6 vexflow-wrapper" id="exam-sheet-canvas"></div>
+                <div class="mt-4 text-xs text-charcoal-500">
+                  目前進度：第 ${ex.currentEventIdx + 1} / ${q.events.length} 組音符
+                </div>
+              </div>
+            </div>
+          `;
+
+          this.renderer.render('exam-sheet-canvas', {
+            clef: q.clef,
+            keySignature: q.keySignature,
+            timeSignature: q.timeSignature,
+            events: q.events,
+            eventStates: ex.eventStates
+          });
+
+          // Force hide piano target highlights during Exam!
+          this.clearPianoHighlights();
+          return;
+        }
+
+        if (ex.phase === 'report') {
+          const correctCount = ex.results.filter(r => r.isCorrect).length;
+          const score = Math.round((correctCount / ex.results.length) * 100);
+          const passed = score >= 80;
+          const mistakes = ex.results.filter(r => !r.isCorrect);
+
+          root.innerHTML = `
+            <div class="max-w-4xl mx-auto space-y-6">
+              <!-- Score Card -->
+              <div class="bg-white rounded-3xl p-6 sm:p-8 border border-cream-200 shadow-soft flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="space-y-2 text-center md:text-left">
+                  <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                    passed ? 'bg-feedback-successBg text-feedback-success' : 'bg-feedback-errorBg text-feedback-error'
+                  }">
+                    <i data-lucide="${passed ? 'award' : 'rotate-ccw'}" class="w-4 h-4"></i>
+                    ${passed ? '恭喜通過階段視譜檢定！' : '尚未達 80% 通過門檻，建議針對錯題加強'}
+                  </div>
+                  <h2 class="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900">
+                    Level ${ex.level} 模擬測驗成績單
+                  </h2>
+                  <p class="text-xs sm:text-sm text-charcoal-600">
+                    答對 ${correctCount} 題 / 共 ${ex.results.length} 題 · 總耗時 ${ex.elapsedSec} 秒
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-5">
+                  <div class="w-28 h-28 rounded-full border-4 ${passed ? 'border-feedback-success text-feedback-success' : 'border-amber-classic text-charcoal-900'} flex flex-col items-center justify-center bg-cream-50">
+                    <span class="text-3xl font-bold">${score}</span>
+                    <span class="text-[11px] font-semibold uppercase">分 (Score)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap gap-2.5">
+                  ${mistakes.length > 0 ? `
+                    <button onclick="app.retryExamMistakes()" class="px-5 py-2.5 rounded-xl bg-amber-classic hover:bg-amber-dark text-white text-xs font-bold shadow-xs flex items-center gap-2 transition-colors">
+                      <i data-lucide="repeat" class="w-4 h-4"></i>
+                      一鍵重練本次錯題 (${mistakes.length} 題)
+                    </button>
+                  ` : ''}
+                  <button onclick="app.startExam()" class="px-4 py-2.5 rounded-xl bg-charcoal-900 hover:bg-charcoal-800 text-cream-50 text-xs font-semibold">
+                    重新測驗同級別
+                  </button>
+                </div>
+                <button onclick="app.navigate('curriculum', true)" class="px-4 py-2.5 rounded-xl bg-white border border-cream-300 text-charcoal-800 text-xs font-semibold hover:bg-cream-100">
+                  返回課程地圖
+                </button>
+              </div>
+
+              <!-- Detailed Question Breakdown & Mistake Review -->
+              <div class="bg-white rounded-3xl p-6 border border-cream-200 shadow-card space-y-4">
+                <h3 class="text-base font-bold text-charcoal-900 flex items-center gap-2">
+                  <i data-lucide="list-checks" class="w-5 h-5 text-amber-dark"></i>
+                  逐題作答明細與錯題回顧
+                </h3>
+
+                <div class="divide-y divide-cream-100">
+                  ${ex.results.map((res, idx) => {
+                    const expectedStr = res.question.events.map(ev => ev.keys.map(k => k.replace('#', '♯')).join('+')).join(' → ');
+                    const userStr = res.userAnswers.map(arr => arr.map(k => k.replace('#', '♯')).join('+')).join(' → ');
+                    return `
+                      <div class="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-3">
+                          <span class="w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0 ${
+                            res.isCorrect ? 'bg-feedback-successBg text-feedback-success' : 'bg-feedback-errorBg text-feedback-error'
+                          }">${idx + 1}</span>
+                          <div>
+                            <span class="font-bold text-charcoal-900">${res.question.category}</span>
+                            <span class="text-charcoal-500 ml-2">(${res.question.clef === 'treble' ? '高音譜號' : res.question.clef === 'bass' ? '低音譜號' : '大譜表'} · ${res.question.keySignature}大調)</span>
+                          </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-4 pl-9 sm:pl-0">
+                          <div>
+                            <span class="text-charcoal-500">你的作答：</span>
+                            <span class="font-mono font-bold ${res.isCorrect ? 'text-feedback-success' : 'text-feedback-error'}">${userStr || '未完成'}</span>
+                          </div>
+                          ${!res.isCorrect ? `
+                            <div>
+                              <span class="text-charcoal-500">正確答案：</span>
+                              <span class="font-mono font-bold text-charcoal-900 bg-cream-100 px-2 py-0.5 rounded">${expectedStr}</span>
+                            </div>
+                          ` : ''}
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      setExamConfig(key, value) {
+        this.examState[key] = value;
+        this.renderExamView();
+        lucide.createIcons();
+      }
+
+      startExam() {
+        const levelData = CURRICULUM_DATA.find(c => c.level === this.examState.level) || CURRICULUM_DATA[0];
+        const basePool = [...levelData.questions];
+        const selectedQuestions = [];
+
+        // Build requested question count (10 or 15)
+        for (let i = 0; i < this.examState.questionCount; i++) {
+          const item = basePool[i % basePool.length];
+          selectedQuestions.push(item);
+        }
+        // Shuffle
+        selectedQuestions.sort(() => Math.random() - 0.5);
+
+        this.examState.phase = 'running';
+        this.examState.questions = selectedQuestions;
+        this.examState.currentIndex = 0;
+        this.examState.currentEventIdx = 0;
+        this.examState.collectedNotesInEvent = new Set();
+        this.examState.eventStates = selectedQuestions[0].events.map((_, idx) => idx === 0 ? 'active' : 'default');
+        this.examState.userRecordedAnswers = [[]];
+        this.examState.results = [];
+        this.examState.isTransitioning = false;
+        this.examState.startTime = Date.now();
+        this.examState.timeLeftSec = 180;
+
+        // Turn off key labels during Exam for authentic test condition
+        this.toggleKeyLabels(false);
+
+        this.stopExamTimer();
+        if (this.examState.timedMode) {
+          this.examState.timerInterval = setInterval(() => {
+            this.examState.timeLeftSec -= 1;
+            const badge = document.getElementById('exam-timer-badge');
+            if (badge) {
+              const mins = String(Math.max(0, Math.floor(this.examState.timeLeftSec / 60))).padStart(2, '0');
+              const secs = String(Math.max(0, this.examState.timeLeftSec % 60)).padStart(2, '0');
+              badge.querySelector('span').textContent = `${mins}:${secs}`;
+            }
+            if (this.examState.timeLeftSec <= 0) {
+              this.finishExam();
+            }
+          }, 1000);
+        }
+
+        this.renderExamView();
+        lucide.createIcons();
+      }
+
+      stopExamTimer() {
+        if (this.examState.timerInterval) {
+          clearInterval(this.examState.timerInterval);
+          this.examState.timerInterval = null;
+        }
+      }
+
+      abortExam() {
+        this.showConfirm(
+          '確定放棄本次測驗？',
+          '放棄後將不會儲存成績單，您可以隨時重新開始。',
+          () => {
+            this.stopExamTimer();
+            this.examState.phase = 'setup';
+            this.toggleKeyLabels(true);
+            this.renderExamView();
+            lucide.createIcons();
+          }
+        );
+      }
+
+      evaluateExamInput(playedPitch) {
+        const ex = this.examState;
+        if (ex.isTransitioning || ex.phase !== 'running') return;
+
+        const q = ex.questions[ex.currentIndex];
+        const targetEvent = q.events[ex.currentEventIdx];
+        const normalizedTargets = targetEvent.keys.map(k => normalizePitch(k));
+
+        // Record user's pressed pitch for current event
+        if (!ex.userRecordedAnswers[ex.currentEventIdx]) {
+          ex.userRecordedAnswers[ex.currentEventIdx] = [];
+        }
+        ex.userRecordedAnswers[ex.currentEventIdx].push(playedPitch);
+
+        if (normalizedTargets.includes(playedPitch)) {
+          ex.collectedNotesInEvent.add(playedPitch);
+          this.flashKeyPress(playedPitch, 'state-correct');
+
+          const allSatisfied = normalizedTargets.every(t => ex.collectedNotesInEvent.has(t));
+          if (allSatisfied) {
+            ex.eventStates[ex.currentEventIdx] = 'correct';
+            ex.collectedNotesInEvent.clear();
+
+            if (ex.currentEventIdx + 1 < q.events.length) {
+              ex.currentEventIdx += 1;
+              ex.userRecordedAnswers[ex.currentEventIdx] = [];
+              ex.eventStates[ex.currentEventIdx] = 'active';
+              this.renderExamView();
+              lucide.createIcons();
+            } else {
+              // Passed question cleanly!
+              this.sound.playFeedback('correct');
+              this.completeExamQuestion(true);
+            }
+          }
+        } else {
+          // Wrong pitch in Exam -> immediately mark question wrong and advance
+          this.sound.playFeedback('wrong');
+          this.flashKeyPress(playedPitch, 'state-wrong');
+          ex.eventStates[ex.currentEventIdx] = 'wrong';
+          this.renderExamView();
+          lucide.createIcons();
+          this.completeExamQuestion(false);
+        }
+      }
+
+      completeExamQuestion(isCorrect) {
+        const ex = this.examState;
+        ex.isTransitioning = true;
+        const q = ex.questions[ex.currentIndex];
+
+        ex.results.push({
+          question: q,
+          userAnswers: ex.userRecordedAnswers,
+          isCorrect
+        });
+
+        this.store.recordAttempt({
+          level: ex.level,
+          clef: q.clef,
+          targetKeys: q.events[ex.currentEventIdx]?.keys || q.events[0].keys,
+          isCorrect,
+          category: q.category
+        });
+
+        setTimeout(() => {
+          if (ex.currentIndex + 1 < ex.questions.length) {
+            ex.currentIndex += 1;
+            const nextQ = ex.questions[ex.currentIndex];
+            ex.currentEventIdx = 0;
+            ex.collectedNotesInEvent = new Set();
+            ex.eventStates = nextQ.events.map((_, idx) => idx === 0 ? 'active' : 'default');
+            ex.userRecordedAnswers = [[]];
+            ex.isTransitioning = false;
+            this.renderExamView();
+            lucide.createIcons();
+          } else {
+            this.finishExam();
+          }
+        }, 420);
+      }
+
+      finishExam() {
+        this.stopExamTimer();
+        const ex = this.examState;
+        ex.phase = 'report';
+        ex.elapsedSec = Math.max(1, Math.round((Date.now() - ex.startTime) / 1000));
+        this.toggleKeyLabels(true);
+
+        const correctCount = ex.results.filter(r => r.isCorrect).length;
+        const score = Math.round((correctCount / Math.max(1, ex.results.length)) * 100);
+        this.store.recordExamResult(ex.level, score);
+
+        this.renderExamView();
+        lucide.createIcons();
+      }
+
+      retryExamMistakes() {
+        const mistakes = this.examState.results.filter(r => !r.isCorrect).map(r => r.question);
+        if (mistakes.length === 0) return;
+
+        this.practiceState.level = this.examState.level;
+        this.practiceState.customPool = mistakes;
+        this.practiceState.showHints = true;
+        this.loadNextPracticeQuestion();
+        this.navigate('practice', true);
+        this.showToast(`已載入 ${mistakes.length} 道測驗錯題進行針對性重練！`, 'warning');
+      }
+
+      // -------------------- VIEW 5: ANALYTICS & WEAKNESS DIAGNOSIS --------------------
+      renderAnalyticsView() {
+        const root = document.getElementById('app-root');
+        const st = this.store.state;
+
+        const totalAttempted = Object.values(st.levelStats).reduce((s, v) => s + v.attempted, 0);
+        const totalCorrect = Object.values(st.levelStats).reduce((s, v) => s + v.correct, 0);
+        const overallAcc = totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
+
+        // Top 5 Error Notes
+        const sortedErrors = Object.entries(st.noteErrors)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5);
+
+        // Clef Accuracies
+        const calcClefAcc = (key) => {
+          const c = st.clefStats[key];
+          if (!c || c.attempted === 0) return { acc: 0, count: 0 };
+          return { acc: Math.round((c.correct / c.attempted) * 100), count: c.attempted };
+        };
+        const trebleStat = calcClefAcc('treble');
+        const bassStat = calcClefAcc('bass');
+        const grandStat = calcClefAcc('grand');
+
+        // Dynamic Coach Recommendation
+        let adviceTitle = '持續累積視譜里程數';
+        let adviceBody = '目前練習數據尚少，建議從 Level 1 或 Level 2 開始每日完成 15 題隨堂練習，建立穩定的五線譜空間反射。';
+        let targetWeakLevel = 1;
+
+        if (totalAttempted > 0) {
+          if (bassStat.count >= 3 && bassStat.acc < trebleStat.acc - 10) {
+            adviceTitle = '弱點診斷：低音譜號（Bass Clef）識別速度較慢';
+            adviceBody = `您的高音譜號準確率為 ${trebleStat.acc}%，但低音譜號僅有 ${bassStat.acc}%。建議多利用第四線 F3 與第二間 C3 作為定位基準進行練習。`;
+            targetWeakLevel = 1;
+          } else if (sortedErrors.length > 0 && sortedErrors[0][0].includes('#') || (sortedErrors[0] && sortedErrors[0][0].includes('b'))) {
+            adviceTitle = `弱點診斷：黑鍵與調號升降音（如 ${sortedErrors[0][0].replace('#', '♯')}）容易遺漏`;
+            adviceBody = '視譜時請養成「先看調號、再看音高」的習慣，特別留意 G 大調的 F♯ 與 F 大調的 B♭。';
+            targetWeakLevel = 3;
+          } else if (sortedErrors.length > 0) {
+            adviceTitle = `弱點診斷：音符 ${sortedErrors[0][0].replace('#', '♯')} 錯誤次數最多 (${sortedErrors[0][1]} 次)`;
+            adviceBody = '建議進入互動範例模式重新確認該音符在五線譜上的線間位置，再進行針對性練習。';
+            targetWeakLevel = st.unlockedLevel;
+          }
+        }
+
+        root.innerHTML = `
+          <div class="space-y-6">
+            <!-- Top KPI Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="bg-white p-5 rounded-2xl border border-cream-200 shadow-card">
+                <span class="text-xs font-medium text-charcoal-500">總累計視譜題數</span>
+                <p class="text-2xl sm:text-3xl font-bold text-charcoal-900 mt-1">${totalAttempted}</p>
+                <span class="text-[11px] text-charcoal-500 mt-1 block">答對 ${totalCorrect} 題</span>
+              </div>
+              <div class="bg-white p-5 rounded-2xl border border-cream-200 shadow-card">
+                <span class="text-xs font-medium text-charcoal-500">綜合平均準確率</span>
+                <p class="text-2xl sm:text-3xl font-bold text-amber-dark mt-1">${overallAcc}%</p>
+                <span class="text-[11px] text-charcoal-500 mt-1 block">目標維持 85% 以上</span>
+              </div>
+              <div class="bg-white p-5 rounded-2xl border border-cream-200 shadow-card">
+                <span class="text-xs font-medium text-charcoal-500">高音譜號準確率</span>
+                <p class="text-2xl sm:text-3xl font-bold text-charcoal-900 mt-1">${trebleStat.acc}%</p>
+                <span class="text-[11px] text-charcoal-500 mt-1 block">共練習 ${trebleStat.count} 題</span>
+              </div>
+              <div class="bg-white p-5 rounded-2xl border border-cream-200 shadow-card">
+                <span class="text-xs font-medium text-charcoal-500">低音譜號準確率</span>
+                <p class="text-2xl sm:text-3xl font-bold text-charcoal-900 mt-1">${bassStat.acc}%</p>
+                <span class="text-[11px] text-charcoal-500 mt-1 block">共練習 ${bassStat.count} 題</span>
+              </div>
+            </div>
+
+            <!-- AI / Rule-Based Coach Diagnosis Banner -->
+            <div class="bg-charcoal-900 text-cream-50 rounded-3xl p-6 sm:p-7 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div class="space-y-2 max-w-2xl">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-classic/20 text-amber-classic text-xs font-semibold">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 個人化視譜學習建議
+                </span>
+                <h3 class="text-lg sm:text-xl font-bold">${adviceTitle}</h3>
+                <p class="text-xs sm:text-sm text-cream-200 leading-relaxed">${adviceBody}</p>
+              </div>
+              <button onclick="app.startLevelPractice(${targetWeakLevel})" class="shrink-0 px-5 py-3 rounded-xl bg-amber-classic hover:bg-amber-dark text-white text-xs font-bold transition-colors flex items-center gap-2">
+                前往 Level ${targetWeakLevel} 弱點特訓 <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Charts & Top Error Leaderboard -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <!-- Level Mastery Breakdown -->
+              <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-cream-200 shadow-card space-y-4">
+                <h3 class="text-base font-bold text-charcoal-900 flex items-center gap-2">
+                  <i data-lucide="bar-chart-2" class="w-5 h-5 text-amber-dark"></i>
+                  各階段關卡熟練度與最高測驗成績
+                </h3>
+                <div class="space-y-4 pt-2">
+                  ${CURRICULUM_DATA.map(c => {
+                    const mastery = this.store.getLevelMastery(c.level);
+                    const acc = this.store.getLevelAccuracy(c.level);
+                    const bestExam = st.levelStats[c.level]?.bestExamScore || 0;
+                    return `
+                      <div>
+                        <div class="flex items-center justify-between text-xs mb-1.5">
+                          <span class="font-bold text-charcoal-900">${c.code} · ${c.title.split('：')[1]}</span>
+                          <span class="text-charcoal-600">
+                            熟練度 <strong>${mastery}%</strong> · 準確率 ${acc}% · 模擬考最高 ${bestExam}分
+                          </span>
+                        </div>
+                        <div class="w-full h-2.5 bg-cream-100 rounded-full overflow-hidden">
+                          <div class="h-full bg-amber-classic rounded-full transition-all duration-500" style="width: ${mastery}%"></div>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+
+              <!-- Most Missed Notes Leaderboard -->
+              <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-cream-200 shadow-card space-y-4">
+                <h3 class="text-base font-bold text-charcoal-900 flex items-center gap-2">
+                  <i data-lucide="alert-circle" class="w-5 h-5 text-feedback-error"></i>
+                  最常看錯 / 彈錯音符排行 (Top 5)
+                </h3>
+
+                ${sortedErrors.length > 0 ? `
+                  <div class="space-y-2.5 pt-1">
+                    ${sortedErrors.map(([note, count], idx) => {
+                      const meta = getKeyMeta(note);
+                      return `
+                        <div class="flex items-center justify-between p-3 rounded-2xl bg-cream-50 border border-cream-200">
+                          <div class="flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-lg bg-feedback-errorBg text-feedback-error text-xs font-bold flex items-center justify-center">
+                              #${idx + 1}
+                            </span>
+                            <div>
+                              <span class="text-sm font-bold text-charcoal-900">${note.replace('#', '♯')}</span>
+                              <span class="text-xs text-charcoal-500 ml-2">${meta.solfege} (${meta.zh})</span>
+                            </div>
+                          </div>
+                          <span class="text-xs font-bold text-feedback-error bg-white px-2.5 py-1 rounded-lg border border-cream-200">
+                            錯誤 ${count} 次
+                          </span>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                ` : `
+                  <div class="py-10 text-center bg-cream-50 rounded-2xl border border-dashed border-cream-300">
+                    <i data-lucide="check-circle-2" class="w-8 h-8 text-feedback-success mx-auto mb-2"></i>
+                    <p class="text-sm font-semibold text-charcoal-800">目前尚無錯題紀錄</p>
+                    <p class="text-xs text-charcoal-500 mt-1">開始隨堂練習或階段測驗後，系統將自動追蹤您的盲點音符。</p>
+                  </div>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Initialize Application Safely on DOM Load
+    window.addEventListener('DOMContentLoaded', () => {
+      window.app = new PianoTrainerApp();
+    });
+  </script>
+</body>
+</html>
